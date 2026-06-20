@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 import {
   analyzeWindow,
   computeBaseline,
+  computeConfidence,
   bucketForHour,
   bucketHourRange,
   detectTrend,
@@ -72,18 +73,39 @@ test("yalnızca backspace riski => WARNING", () => {
 });
 
 // ---- İki risk birlikte => FATIGUED -----------------------------------------
-test("hem yavaşlama hem backspace riski => FATIGUED", () => {
+test("tek izole çift-risk penceresi => WARNING (henüz doğrulanmadı)", () => {
+  // Sinyal güvenilirliği: ilk kötü pencere, geçmiş yokken FATIGUED vermez.
   const r = analyzeWindow(
     baseline,
     win({ mean_flight_ms: 130, backspace_percentage: 7.5 })
   );
   assert.equal(r.signals.slowdownRisk, true);
   assert.equal(r.signals.backspaceRisk, true);
+  assert.equal(r.status, "WARNING");
+});
+
+test("çift risk + önceki pencere de kötü => FATIGUED (doğrulandı)", () => {
+  const r = analyzeWindow(
+    baseline,
+    win({ mean_flight_ms: 130, backspace_percentage: 7.5 }),
+    "WARNING"
+  );
+  assert.equal(r.status, "FATIGUED");
+});
+
+test("çift risk + düşüş trendi => FATIGUED (doğrulandı)", () => {
+  const r = analyzeWindow(
+    baseline,
+    win({ mean_flight_ms: 130, backspace_percentage: 7.5 }),
+    null,
+    [80, 65, 50]
+  );
+  assert.equal(r.trend, "declining");
   assert.equal(r.status, "FATIGUED");
 });
 
 // ---- Spec örneği (referans senaryo) ----------------------------------------
-test("spec örnek girdisi: mean 130 + backspace 7.5 => FATIGUED, makul skor", () => {
+test("spec örnek girdisi: mean 130 + backspace 7.5, önceki kötü => FATIGUED, makul skor", () => {
   const r = analyzeWindow(
     baseline,
     win({
@@ -92,7 +114,8 @@ test("spec örnek girdisi: mean 130 + backspace 7.5 => FATIGUED, makul skor", ()
       backspace_percentage: 7.5,
       total_samples: 150,
       pause_ratio: 0.21,
-    })
+    }),
+    "FATIGUED"
   );
   assert.equal(r.status, "FATIGUED");
   assert.ok(r.score > 40 && r.score < 80, `skor aralık dışı: ${r.score}`);
@@ -213,3 +236,49 @@ test("bucketHourRange night dilimi gün sınırını aşar (wrap)", () => {
   const morning = bucketHourRange("morning");
   assert.equal(morning.wrap, false);
 });
+
+// ---- Güven (confidence) ----------------------------------------------------
+test("computeConfidence: taze baseline + az örnek => low", () => {
+  assert.equal(computeConfidence(2, 25), "low");
+});
+
+test("computeConfidence: olgun baseline + bol örnek => high", () => {
+  assert.equal(computeConfidence(12, 120), "high");
+});
+
+test("computeConfidence: zayıf halka kazanır (olgun baseline ama az örnek => low)", () => {
+  assert.equal(computeConfidence(12, 25), "low");
+});
+
+test("computeConfidence: orta baseline + orta örnek => medium", () => {
+  assert.equal(computeConfidence(5, 50), "medium");
+});
+
+test("düşük güvende FATIGUED/WARNING dili yumuşar", () => {
+  // Taze baseline (2 pencere) + düşük örnek + çift risk + önceki kötü.
+  const r = analyzeWindow(
+    baseline,
+    win({ mean_flight_ms: 130, backspace_percentage: 7.5, total_samples: 25 }),
+    "WARNING",
+    [],
+    2
+  );
+  assert.equal(r.confidence, "low");
+  assert.ok(
+    r.recommendation.includes("yeterli veri toplanmadı"),
+    `düşük güven dili bekleniyor: "${r.recommendation}"`
+  );
+});
+
+test("yüksek güvende net uyarı dili korunur", () => {
+  const r = analyzeWindow(
+    baseline,
+    win({ mean_flight_ms: 130, backspace_percentage: 7.5, total_samples: 120 }),
+    "WARNING",
+    [],
+    12
+  );
+  assert.equal(r.confidence, "high");
+  assert.ok(!r.recommendation.includes("yeterli veri toplanmadı"));
+});
+

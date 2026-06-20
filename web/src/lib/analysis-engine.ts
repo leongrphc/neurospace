@@ -35,11 +35,14 @@ export interface IncomingWindow {
 
 export type TrendDirection = "declining" | "recovering" | "stable" | "unknown";
 
+export type Confidence = "low" | "medium" | "high";
+
 export interface AnalysisResult {
   status: AnalysisStatus;
   score: number; // 0-100
   recommendation: string;
   trend: TrendDirection;
+  confidence: Confidence;
   signals: {
     flightDeviation: number;
     backspaceDeviation: number;
@@ -53,6 +56,12 @@ const MIN_SAMPLES = 20;
 const SLOWDOWN_RISK_THRESHOLD = 1.25; // %25+ yavaşlama
 const BACKSPACE_RISK_THRESHOLD = 1.4; // %40+ artış
 const RELIABLE_SAMPLE_COUNT = 150; // tam güvenilir sayılan örnek sayısı
+
+// Güven (confidence) eşikleri
+// Baseline ne kadar çok pencereden kuruldu + bu pencerede ne kadar örnek var?
+const CONFIDENCE_HIGH_BASELINE_WINDOWS = 10; // bu kadar pencereyle baseline olgun
+const CONFIDENCE_HIGH_SAMPLES = 80; // bu kadar örnekle pencere güvenilir
+const CONFIDENCE_MED_SAMPLES = 40;
 
 // Trend tespiti için eşikler
 const TREND_MIN_POINTS = 3; // anlamlı trend için en az 3 skor gerekir
@@ -122,11 +131,38 @@ function deviationToScore(deviation: number): number {
   return clamp(100 - excess * 130, 0, 100);
 }
 
+/**
+ * Güven seviyesi: skora ne kadar güvenebiliriz?
+ * - Baseline kaç pencereden kuruldu (olgunluk)
+ * - Bu pencerede kaç örnek var (anlık güvenilirlik)
+ * İkisinin de zayıf halkası kazanır (en kötü olan belirler).
+ */
+export function computeConfidence(
+  baselineWindows: number,
+  totalSamples: number
+): Confidence {
+  const baselineLevel: Confidence =
+    baselineWindows >= CONFIDENCE_HIGH_BASELINE_WINDOWS
+      ? "high"
+      : baselineWindows >= CALIBRATION_WINDOWS * 2
+        ? "medium"
+        : "low";
+  const sampleLevel: Confidence =
+    totalSamples >= CONFIDENCE_HIGH_SAMPLES
+      ? "high"
+      : totalSamples >= CONFIDENCE_MED_SAMPLES
+        ? "medium"
+        : "low";
+  const rank: Record<Confidence, number> = { low: 0, medium: 1, high: 2 };
+  return rank[baselineLevel] <= rank[sampleLevel] ? baselineLevel : sampleLevel;
+}
+
 export function analyzeWindow(
   baseline: UserBaseline,
   current: IncomingWindow,
   previousStatus?: AnalysisStatus | null,
-  recentScores: number[] = []
+  recentScores: number[] = [],
+  baselineWindows = CALIBRATION_WINDOWS
 ): AnalysisResult {
   // --- Kural 1: yetersiz veri ---
   if (current.total_samples < MIN_SAMPLES) {
@@ -135,6 +171,7 @@ export function analyzeWindow(
       score: 0,
       recommendation: RECOMMENDATIONS.INSUFFICIENT_DATA,
       trend: "unknown",
+      confidence: "low",
       signals: {
         flightDeviation: 0,
         backspaceDeviation: 0,
@@ -181,10 +218,23 @@ export function analyzeWindow(
       reliabilityScore * 0.1
   );
 
+  // --- Trend analizi (tek pencere gürültüsünü azaltır) ---
+  // Mevcut skoru da dahil ederek son skorların eğilimine bak.
+  // Status'ten ÖNCE hesaplanır; FATIGUED kararı trende dayanır.
+  const trend = detectTrend([...recentScores, score]);
+  const previousWasBad =
+    previousStatus === "FATIGUED" || previousStatus === "WARNING";
+
   // --- Durum belirleme ---
+  // SİNYAL GÜVENİLİRLİĞİ: Tek izole kötü pencere hemen FATIGUED vermez.
+  // İki risk birlikte olsa bile, yorgunluk ancak DOĞRULANIRSA ilan edilir:
+  //   - önceki pencere de kötüydü (previousWasBad), VEYA
+  //   - skor düşüş trendinde (trend === "declining").
+  // Doğrulama yoksa ilk kötü pencere yalnızca WARNING'dir; kullanıcıyı
+  // tek seferlik bir dalgalanma için "yorgunsun" diye paniğe sevk etmeyiz.
   let status: AnalysisStatus;
   if (slowdownRisk && backspaceRisk) {
-    status = "FATIGUED";
+    status = previousWasBad || trend === "declining" ? "FATIGUED" : "WARNING";
   } else if (slowdownRisk || backspaceRisk) {
     status = "WARNING";
   } else if (score >= 80) {
@@ -193,17 +243,8 @@ export function analyzeWindow(
     status = "SLIGHTLY_DISTRACTED";
   }
 
-  // --- Trend analizi (tek pencere gürültüsünü azaltır) ---
-  // Mevcut skoru da dahil ederek son skorların eğilimine bak.
-  const trend = detectTrend([...recentScores, score]);
-
   // RECOVERING: önceki pencere kötüyken bu pencere belirgin iyileşme gösteriyorsa
-  if (
-    (previousStatus === "FATIGUED" || previousStatus === "WARNING") &&
-    !slowdownRisk &&
-    !backspaceRisk &&
-    score >= 60
-  ) {
+  if (previousWasBad && !slowdownRisk && !backspaceRisk && score >= 60) {
     status = "RECOVERING";
   }
 
@@ -213,7 +254,7 @@ export function analyzeWindow(
     trend === "recovering" &&
     !slowdownRisk &&
     !backspaceRisk &&
-    (previousStatus === "FATIGUED" || previousStatus === "WARNING")
+    previousWasBad
   ) {
     status = "RECOVERING";
   }
@@ -222,6 +263,8 @@ export function analyzeWindow(
   if (trend === "declining" && status === "OPTIMAL") {
     status = "SLIGHTLY_DISTRACTED";
   }
+
+  const confidence = computeConfidence(baselineWindows, current.total_samples);
 
   // Trend bilgisini öneriye ekle (status ile tutarlı olacak şekilde).
   // RECOVERING/OPTIMAL'de "düşüştesin" demek çelişki olur; eklemeyiz.
@@ -234,11 +277,20 @@ export function analyzeWindow(
     recommendation += " İyiye gidiyorsunuz, tempoyu koruyun.";
   }
 
+  // DÜRÜST BELİRSİZLİK: Güven düşükken kesin/uyarıcı dili yumuşat.
+  // Az veri veya taze baseline ile "yorgunsun" demek yerine ihtiyatlı konuş.
+  if (confidence === "low" && (status === "FATIGUED" || status === "WARNING")) {
+    recommendation =
+      "Olası bir odak düşüşü sinyali var, ancak henüz yeterli veri toplanmadı; " +
+      "skor netleştikçe daha güvenilir olacak.";
+  }
+
   return {
     status,
     score,
     recommendation,
     trend,
+    confidence,
     signals: {
       flightDeviation: Math.round(flightDeviation * 100) / 100,
       backspaceDeviation: Math.round(backspaceDeviation * 100) / 100,
