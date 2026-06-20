@@ -235,6 +235,9 @@ const COOLDOWN = {
 };
 
 // Hangi bildirim tipi gösterilecek? Öncelik sırasıyla karar verilir.
+// Mesaj olarak HER ZAMAN motorun ürettiği report.recommendation tercih edilir
+// (tek doğru kaynak): böylece dashboard, banner ve OS bildirimi tutarlı olur.
+// recommendation yoksa duruma uygun bir yedek metin kullanılır.
 function pickNotification(report, flowStreak) {
   if (report.status === "FATIGUED") {
     return {
@@ -263,6 +266,7 @@ function pickNotification(report, flowStreak) {
       kind: "declining",
       title: "NeuroSpace — Odak düşüşte",
       message:
+        report.recommendation ||
         "Son ölçümlerde düşüş eğilimi var. Kısa bir nefes molası iyi gelebilir.",
     };
   }
@@ -271,7 +275,9 @@ function pickNotification(report, flowStreak) {
     return {
       kind: "recovering",
       title: "NeuroSpace — Toparlanıyorsunuz",
-      message: "Tempo yeniden yükseliyor. Aynı şekilde devam edin.",
+      message:
+        report.recommendation ||
+        "Tempo yeniden yükseliyor. Aynı şekilde devam edin.",
     };
   }
   // Uzun süre akışta (art arda yüksek OPTIMAL): olumlu pekiştirme
@@ -279,7 +285,9 @@ function pickNotification(report, flowStreak) {
     return {
       kind: "flow",
       title: "NeuroSpace — Akıştasınız",
-      message: "Uzun süredir yüksek odakta yazıyorsunuz. Harika gidiyor!",
+      message:
+        report.recommendation ||
+        "Uzun süredir yüksek odakta yazıyorsunuz. Harika gidiyor!",
     };
   }
   return null;

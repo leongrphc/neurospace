@@ -260,6 +260,7 @@
   const BANNER_THEME = {
     FATIGUED: { bg: "#ef4444", icon: "⚠️" },
     WARNING: { bg: "#eab308", icon: "⏳" },
+    SLIGHTLY_DISTRACTED: { bg: "#f59e0b", icon: "•" },
     RECOVERING: { bg: "#6366f1", icon: "↗" },
     OPTIMAL: { bg: "#22c55e", icon: "✓" },
   };
