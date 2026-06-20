@@ -31,6 +31,8 @@ export interface IncomingWindow {
   total_samples: number;
   active_typing_seconds?: number;
   pause_ratio: number;
+  flight_cv?: number; // ritim tutarsızlığı (std/mean); yüksek = düzensiz
+  backspace_burst_ratio?: number; // ardışık silme serilerinin silmelere oranı
 }
 
 export type TrendDirection = "declining" | "recovering" | "stable" | "unknown";
@@ -56,6 +58,13 @@ const MIN_SAMPLES = 20;
 const SLOWDOWN_RISK_THRESHOLD = 1.25; // %25+ yavaşlama
 const BACKSPACE_RISK_THRESHOLD = 1.4; // %40+ artış
 const RELIABLE_SAMPLE_COUNT = 150; // tam güvenilir sayılan örnek sayısı
+
+// Ek ritim sinyalleri (geriye uyumlu: alan yoksa/0 ise etki yok)
+const CV_HEALTHY = 0.6; // bu değerin altındaki tutarsızlık normal sayılır
+const CV_MAX_PENALTY = 12; // çok düzensiz ritmin skora max cezası (puan)
+const BURST_HEALTHY = 0.25; // silmelerin %25'i seri ise normal
+const BURST_MAX_PENALTY = 8; // yoğun silme patlamasının skora max cezası (puan)
+const STUCK_RATIO_THRESHOLD = 4; // p95/median bu oranı aşarsa "takılma" sinyali
 
 // Güven (confidence) eşikleri
 // Baseline ne kadar çok pencereden kuruldu + bu pencerede ne kadar örnek var?
@@ -218,10 +227,43 @@ export function analyzeWindow(
       reliabilityScore * 0.1
   );
 
+  // --- Ek ritim sinyalleri (yardımcı düzensizlik cezası) ---
+  // GERİYE UYUMLU: alanlar yoksa (0/undefined) ceza 0; eski davranış korunur.
+  // Bu sinyaller ana skoru ezmez, yalnızca düzensizlik varsa birkaç puan kırpar.
+  const flightCv = current.flight_cv ?? 0;
+  const burstRatio = current.backspace_burst_ratio ?? 0;
+
+  const cvPenalty =
+    flightCv > CV_HEALTHY
+      ? clamp((flightCv - CV_HEALTHY) * CV_MAX_PENALTY, 0, CV_MAX_PENALTY)
+      : 0;
+  const burstPenalty =
+    burstRatio > BURST_HEALTHY
+      ? clamp(
+          ((burstRatio - BURST_HEALTHY) / (1 - BURST_HEALTHY)) *
+            BURST_MAX_PENALTY,
+          0,
+          BURST_MAX_PENALTY
+        )
+      : 0;
+
+  // Takılma sinyali: ortalama normal olsa bile p95 medyana göre çok yüksekse
+  // (uzun duraksamalar) ritim "takılıyor" demektir.
+  const median = current.median_flight_ms;
+  const p95 = current.p95_flight_ms ?? 0;
+  const stuckSignal = median > 0 && p95 / median >= STUCK_RATIO_THRESHOLD;
+  const stuckPenalty = stuckSignal ? 5 : 0;
+
+  const scoreAdjusted = clamp(
+    Math.round(score - cvPenalty - burstPenalty - stuckPenalty),
+    0,
+    100
+  );
+
   // --- Trend analizi (tek pencere gürültüsünü azaltır) ---
   // Mevcut skoru da dahil ederek son skorların eğilimine bak.
   // Status'ten ÖNCE hesaplanır; FATIGUED kararı trende dayanır.
-  const trend = detectTrend([...recentScores, score]);
+  const trend = detectTrend([...recentScores, scoreAdjusted]);
   const previousWasBad =
     previousStatus === "FATIGUED" || previousStatus === "WARNING";
 
@@ -237,14 +279,14 @@ export function analyzeWindow(
     status = previousWasBad || trend === "declining" ? "FATIGUED" : "WARNING";
   } else if (slowdownRisk || backspaceRisk) {
     status = "WARNING";
-  } else if (score >= 80) {
+  } else if (scoreAdjusted >= 80) {
     status = "OPTIMAL";
   } else {
     status = "SLIGHTLY_DISTRACTED";
   }
 
   // RECOVERING: önceki pencere kötüyken bu pencere belirgin iyileşme gösteriyorsa
-  if (previousWasBad && !slowdownRisk && !backspaceRisk && score >= 60) {
+  if (previousWasBad && !slowdownRisk && !backspaceRisk && scoreAdjusted >= 60) {
     status = "RECOVERING";
   }
 
@@ -287,7 +329,7 @@ export function analyzeWindow(
 
   return {
     status,
-    score,
+    score: scoreAdjusted,
     recommendation,
     trend,
     confidence,

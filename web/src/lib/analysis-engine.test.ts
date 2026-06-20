@@ -314,4 +314,43 @@ test("shouldUpdateBaseline az örnekli pencereyi reddeder", () => {
   assert.equal(shouldUpdateBaseline(win({ total_samples: 120 })), true);
 });
 
+// ---- Ek ritim sinyalleri ---------------------------------------------------
+test("yeni sinyaller yoksa skor eski davranışla aynı (geriye uyumlu)", () => {
+  // win() flight_cv/backspace_burst_ratio içermez => ceza 0 olmalı.
+  const r = analyzeWindow(baseline, win());
+  assert.equal(r.status, "OPTIMAL");
+  assert.ok(r.score >= 80);
+});
+
+test("yüksek ritim düzensizliği (flight_cv) skoru düşürür", () => {
+  const clean = analyzeWindow(baseline, win());
+  const noisy = analyzeWindow(baseline, win({ flight_cv: 1.5 }));
+  assert.ok(
+    noisy.score < clean.score,
+    `düzensiz ritim skoru düşürmeli: ${noisy.score} < ${clean.score}`
+  );
+});
+
+test("sağlıklı flight_cv ceza vermez", () => {
+  const a = analyzeWindow(baseline, win());
+  const b = analyzeWindow(baseline, win({ flight_cv: 0.4 }));
+  assert.equal(a.score, b.score);
+});
+
+test("yoğun backspace patlaması (burst) skoru düşürür", () => {
+  const clean = analyzeWindow(baseline, win());
+  const bursty = analyzeWindow(baseline, win({ backspace_burst_ratio: 0.9 }));
+  assert.ok(bursty.score < clean.score);
+});
+
+test("takılma sinyali (p95 medyana göre çok yüksek) skoru düşürür", () => {
+  const clean = analyzeWindow(baseline, win({ p95_flight_ms: 200 }));
+  const stuck = analyzeWindow(
+    baseline,
+    win({ median_flight_ms: 90, p95_flight_ms: 600 })
+  );
+  assert.ok(stuck.score < clean.score);
+});
+
+
 

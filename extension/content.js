@@ -38,6 +38,10 @@
       totalKeyCount: 0,
       pauseCount: 0,
       activeTypingMs: 0,
+      // Backspace patlaması: ardışık silme serileri (dağınıklık sinyali).
+      // Yalnızca sayaç; hangi karakterin silindiği yine bilinmez.
+      backspaceBurstCount: 0, // 2+ ardışık silmeden oluşan seri sayısı
+      currentBackspaceRun: 0, // anlık ardışık silme uzunluğu
     };
   }
 
@@ -141,12 +145,19 @@
         // Sadece sayaç artar; hangi karakterin silindiği bilinemez.
         windowState.backspaceCount += 1;
         windowState.totalKeyCount += 1;
+        // Ardışık silme serisi: run 2'ye ulaştığında bir "burst" sayılır
+        // (tek tük düzeltme değil, peş peşe silme = dağınıklık sinyali).
+        windowState.currentBackspaceRun += 1;
+        if (windowState.currentBackspaceRun === 2) {
+          windowState.backspaceBurstCount += 1;
+        }
         lastKeyTs = now;
         return;
       }
 
       // kind === "productive"
       windowState.totalKeyCount += 1;
+      windowState.currentBackspaceRun = 0; // üretken tuş seriyi kırar
 
       if (lastKeyTs !== null) {
         const delta = now - lastKeyTs;
@@ -193,6 +204,25 @@
     const median = medianOf(ft);
     const totalEvents = n + windowState.pauseCount;
 
+    // Ritim tutarlılığı: varyasyon katsayısı (std / mean).
+    // Yorgunlukta ritim sadece yavaşlamaz, DÜZENSİZLEŞİR. Yüksek CV = düzensiz.
+    // GİZLİLİK: yalnızca tek bir oran; ham zaman dizisi gönderilmez.
+    let flightCv = 0;
+    if (n >= 2 && mean > 0) {
+      const variance =
+        ft.reduce((s, v) => s + (v - mean) * (v - mean), 0) / n;
+      flightCv = Math.round((Math.sqrt(variance) / mean) * 100) / 100;
+    }
+
+    // Backspace patlama oranı: ardışık silme serilerinin, toplam silmeye oranı.
+    // Tek tük düzeltme yerine peş peşe silme baskınsa dağınıklık sinyali güçlenir.
+    const backspaceBurstRatio =
+      windowState.backspaceCount > 0
+        ? Math.round(
+            (windowState.backspaceBurstCount / windowState.backspaceCount) * 100
+          ) / 100
+        : 0;
+
     // GİZLİLİK: Yalnızca bu özet nesnesi gönderilir. Ham diziler burada ölür.
     return {
       mean_flight_ms: Math.round(mean * 10) / 10,
@@ -210,6 +240,8 @@
         totalEvents > 0
           ? Math.round((windowState.pauseCount / totalEvents) * 100) / 100
           : 0,
+      flight_cv: flightCv,
+      backspace_burst_ratio: backspaceBurstRatio,
       window_started_at: new Date(windowState.startedAt).toISOString(),
       window_ended_at: new Date().toISOString(),
       // Zaman-bağlamlı baseline için yerel saat (0-23). İçerik DEĞİL, yalnızca saat.

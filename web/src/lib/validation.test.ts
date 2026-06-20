@@ -140,3 +140,28 @@ test("sınır değerleri (min/max) kabul edilir", () => {
   assert.equal(errors, null);
   assert.ok(data);
 });
+
+test("yeni metrikler (flight_cv, backspace_burst_ratio) geçerliyse korunur", () => {
+  const { data, errors } = validateTypingWindow(
+    validBody({ flight_cv: 0.45, backspace_burst_ratio: 0.3 })
+  );
+  assert.equal(errors, null);
+  assert.equal(data!.flight_cv, 0.45);
+  assert.equal(data!.backspace_burst_ratio, 0.3);
+});
+
+test("yeni metrikler yoksa geriye uyumlu 0 olur (eski eklenti)", () => {
+  const { data, errors } = validateTypingWindow(validBody());
+  assert.equal(errors, null);
+  assert.equal(data!.flight_cv, 0);
+  assert.equal(data!.backspace_burst_ratio, 0);
+});
+
+test("yeni metrikler aralık dışıysa hata değil, sınırlanır", () => {
+  const { data, errors } = validateTypingWindow(
+    validBody({ backspace_burst_ratio: 5, flight_cv: -2 })
+  );
+  assert.equal(errors, null);
+  assert.equal(data!.backspace_burst_ratio, 1); // 0..1'e sınırlanır
+  assert.equal(data!.flight_cv, 0); // negatif 0'a sınırlanır
+});

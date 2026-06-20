@@ -13,6 +13,8 @@ export interface ValidatedWindow extends IncomingWindow {
   window_started_at: string;
   window_ended_at: string;
   local_hour: number;
+  flight_cv: number;
+  backspace_burst_ratio: number;
 }
 
 interface ValidationError {
@@ -68,6 +70,16 @@ export function validateTypingWindow(
   const window_started_at = dateField("window_started_at");
   const window_ended_at = dateField("window_ended_at");
 
+  // GERİYE UYUMLU opsiyonel metrikler: eski content.js bunları göndermez.
+  // Yoksa veya geçersizse 0 kabul edilir (hata değil); varsa aralığa zorlanır.
+  const optNum = (field: string, min: number, max: number): number => {
+    const v = b[field];
+    if (!isNum(v)) return 0;
+    return Math.min(max, Math.max(min, v));
+  };
+  const flight_cv = optNum("flight_cv", 0, 10);
+  const backspace_burst_ratio = optNum("backspace_burst_ratio", 0, 1);
+
   // local_hour: eklenti gönderirse doğrula; yoksa window_ended_at'ten türet.
   let local_hour: number;
   const lh = b["local_hour"];
@@ -98,6 +110,8 @@ export function validateTypingWindow(
       window_started_at: window_started_at!,
       window_ended_at: window_ended_at!,
       local_hour,
+      flight_cv,
+      backspace_burst_ratio,
     },
     errors: null,
   };
