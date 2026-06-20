@@ -330,25 +330,102 @@ async function maybeNotify(report, sourceTabId) {
   showBannerInTab(report, choice.message, sourceTabId);
 }
 
-// Content script'e banner mesajı yollar.
+// Content script'e banner mesajı yollar; content script yanıt vermezse
+// (eski sürüm ya da henüz enjekte edilmemiş) chrome.scripting ile doğrudan
+// basit bir banner enjekte eder. Böylece sekme yenilenmese de banner görünür.
 async function showBannerInTab(report, message, sourceTabId) {
+  let tabId = sourceTabId;
+  let tabUrl = "";
   try {
-    let tabId = sourceTabId;
     if (!tabId) {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
       tabId = tab?.id;
-      if (!tabId || !/^https?:/.test(tab?.url || "")) return; // yalnızca web sayfaları
+      tabUrl = tab?.url || "";
     }
-    chrome.tabs.sendMessage(tabId, {
+    if (!tabId) return;
+  } catch (_e) {
+    return;
+  }
+
+  const payload = {
+    status: report.status,
+    recommendation: message || report.recommendation,
+  };
+
+  // 1) Önce mevcut content script'e mesaj dene (tam özellikli banner: aksiyon
+  //    döngüsü vb.). Yanıt gelirse iş bitti.
+  try {
+    const ack = await chrome.tabs.sendMessage(tabId, {
       type: "NS_SHOW_BANNER",
-      report: {
-        status: report.status,
-        recommendation: message || report.recommendation,
-      },
+      report: payload,
+    });
+    if (ack?.shown) return;
+  } catch (_e) {
+    // Content script yok/yanıt vermiyor => fallback'e geç.
+  }
+
+  // 2) Fallback: chrome.scripting ile basit banner enjekte et.
+  //    Yalnızca web sayfalarında (http/https) çalışır.
+  if (tabUrl && !/^https?:/.test(tabUrl)) return;
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      func: injectFallbackBanner,
+      args: [payload],
     });
   } catch (_e) {
-    // Sekme erişilemezse sessizce geç.
+    // chrome:// gibi enjekte edilemeyen sayfalar => sessizce geç.
   }
+}
+
+// chrome.scripting ile enjekte edilen, content script'ten BAĞIMSIZ basit banner.
+// GİZLİLİK: yalnızca verilen anonim durum/öneriyi gösterir; hiçbir veri okumaz.
+function injectFallbackBanner(report) {
+  const ID = "neurospace-banner";
+  const THEME = {
+    FATIGUED: "#ef4444",
+    WARNING: "#eab308",
+    SLIGHTLY_DISTRACTED: "#f59e0b",
+    RECOVERING: "#6366f1",
+    OPTIMAL: "#22c55e",
+  };
+  document.getElementById(ID)?.remove();
+  const bar = document.createElement("div");
+  bar.id = ID;
+  bar.setAttribute("role", "status");
+  bar.style.cssText = [
+    "position:fixed",
+    "top:0",
+    "left:0",
+    "right:0",
+    "z-index:2147483647",
+    "display:flex",
+    "align-items:center",
+    "gap:12px",
+    "padding:12px 18px",
+    `background:${THEME[report.status] || THEME.WARNING}`,
+    "color:#fff",
+    "font:600 14px/1.4 system-ui,-apple-system,'Segoe UI',sans-serif",
+    "box-shadow:0 2px 12px rgba(0,0,0,.25)",
+  ].join(";");
+
+  const msg = document.createElement("span");
+  msg.textContent = `NeuroSpace — ${report.recommendation || ""}`;
+  msg.style.cssText = "flex:1";
+
+  const close = document.createElement("button");
+  close.textContent = "✕";
+  close.setAttribute("aria-label", "Kapat");
+  close.style.cssText =
+    "background:rgba(255,255,255,.2);border:none;color:#fff;width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:13px;flex-shrink:0";
+  close.addEventListener("click", () => bar.remove());
+
+  bar.append(msg, close);
+  document.documentElement.appendChild(bar);
+  setTimeout(() => bar.remove(), 8000);
 }
 
 // ---- Retry queue -----------------------------------------------------------

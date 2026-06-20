@@ -486,10 +486,15 @@
     bar.append(label, better, same);
   }
 
-  chrome.runtime.onMessage.addListener((message) => {
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "NS_SHOW_BANNER" && message.report) {
       showBanner(message.report);
+      // Service worker'a "gösterildi" bilgisini ver ki fallback enjeksiyon
+      // (chrome.scripting) gereksiz yere tetiklenmesin.
+      sendResponse({ shown: true });
+      return true;
     }
+    return false;
   });
 })();
 
