@@ -105,14 +105,17 @@ export function ConsentGate({ children }: { children: React.ReactNode }) {
               Başlamadan önce verinin sınırlarını netleştirelim.
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-              NeuroSpace, yazdığınız şeyi değil yazma ritminizin sayısal izini analiz eder.
-              Devam etmek için aşağıdaki koşulları onaylamanız gerekir.
+              NeuroSpace, yazdığınız şeyi değil yazma ritminizin sayısal izini
+              analiz eder. Devam etmek için aşağıdaki koşulları onaylamanız
+              gerekir.
             </p>
 
             <div className="mt-6 grid gap-3 md:grid-cols-3">
               {CONSENT_POINTS.map((item) => (
                 <div key={item.title} className="ns-panel-muted">
-                  <div className={`text-2xl font-black ${item.cls}`}>{item.mark}</div>
+                  <div className={`text-2xl font-black ${item.cls}`}>
+                    {item.mark}
+                  </div>
                   <div className="mt-2 text-sm font-bold text-slate-900 dark:text-white">
                     {item.title}
                   </div>
@@ -125,14 +128,22 @@ export function ConsentGate({ children }: { children: React.ReactNode }) {
 
             <p className="mt-5 text-xs leading-5 text-slate-500 dark:text-slate-400">
               Ayrıntılar için{" "}
-              <Link href="/privacy" className="font-semibold text-cyan-600 underline dark:text-cyan-300">
+              <Link
+                href="/privacy"
+                className="font-semibold text-cyan-600 underline dark:text-cyan-300"
+              >
                 Gizlilik ve Aydınlatma Metni
               </Link>
-              . Rızanızı Ayarlar sayfasından geri çekebilir, verilerinizi indirebilir veya silebilirsiniz.
+              . Rızanızı Ayarlar sayfasından geri çekebilir, verilerinizi
+              indirebilir veya silebilirsiniz.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <button onClick={grant} disabled={busy} className="ns-button-primary">
+              <button
+                onClick={grant}
+                disabled={busy}
+                className="ns-button-primary"
+              >
                 {busy ? "Kaydediliyor..." : "Açık rıza veriyorum, devam et"}
               </button>
               <Link href="/privacy" className="ns-button-secondary">

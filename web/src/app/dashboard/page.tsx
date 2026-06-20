@@ -13,29 +13,47 @@ import { StatCard, StatusBadge, TrendBadge } from "@/components/StatCard";
 import { ScoreAreaChart, FlightTimeChart } from "@/components/Charts";
 import { demoDailyData, demoSummary, type HourPoint } from "@/lib/demo-data";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
-import { detectTrend, type AnalysisStatus, type TrendDirection } from "@/lib/analysis-engine";
+import {
+  detectTrend,
+  type AnalysisStatus,
+  type TrendDirection,
+} from "@/lib/analysis-engine";
 
 type Mode = "loading" | "demo" | "empty" | "live";
 
 const STATUS_COPY: Record<AnalysisStatus, string> = {
-  INSUFFICIENT_DATA: "Kalibrasyon sürüyor. Birkaç pencere daha yazma ritmi toplandığında skor netleşir.",
-  OPTIMAL: "Ritmin dengeli görünüyor. Derin çalışma blokları için iyi bir aralıktasın.",
-  SLIGHTLY_DISTRACTED: "Hafif dalgalanma var. Bildirimleri kapatıp tek işe dönmek iyi gelebilir.",
-  WARNING: "Odak düşüşü sinyali var. Kısa bir mola veya görev değiştirme planla.",
-  FATIGUED: "Belirgin yorgunluk sinyali var. Su, hareket ve ekran molası önerilir.",
-  RECOVERING: "Toparlanma sinyali var. Hafif görevlerle tempoyu kademeli artır.",
+  INSUFFICIENT_DATA:
+    "Kalibrasyon sürüyor. Birkaç pencere daha yazma ritmi toplandığında skor netleşir.",
+  OPTIMAL:
+    "Ritmin dengeli görünüyor. Derin çalışma blokları için iyi bir aralıktasın.",
+  SLIGHTLY_DISTRACTED:
+    "Hafif dalgalanma var. Bildirimleri kapatıp tek işe dönmek iyi gelebilir.",
+  WARNING:
+    "Odak düşüşü sinyali var. Kısa bir mola veya görev değiştirme planla.",
+  FATIGUED:
+    "Belirgin yorgunluk sinyali var. Su, hareket ve ekran molası önerilir.",
+  RECOVERING:
+    "Toparlanma sinyali var. Hafif görevlerle tempoyu kademeli artır.",
 };
 
 function ModeBadge({ mode }: { mode: Mode }) {
   const label =
-    mode === "live" ? "Canlı veri" : mode === "loading" ? "Yükleniyor" : "Demo veri";
+    mode === "live"
+      ? "Canlı veri"
+      : mode === "loading"
+        ? "Yükleniyor"
+        : "Demo veri";
   const cls =
     mode === "live"
       ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
       : mode === "loading"
-      ? "bg-slate-500/10 text-slate-500"
-      : "bg-amber-500/10 text-amber-700 dark:text-amber-200";
-  return <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${cls}`}>{label}</span>;
+        ? "bg-slate-500/10 text-slate-500"
+        : "bg-amber-500/10 text-amber-700 dark:text-amber-200";
+  return (
+    <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${cls}`}>
+      {label}
+    </span>
+  );
 }
 
 export default function DashboardPage() {
@@ -68,7 +86,9 @@ export default function DashboardPage() {
 
       const { data: windows } = await supabase
         .from("typing_windows")
-        .select("mean_flight_ms, backspace_percentage, active_typing_seconds, created_at")
+        .select(
+          "mean_flight_ms, backspace_percentage, active_typing_seconds, created_at"
+        )
         .gte("created_at", since.toISOString())
         .order("created_at", { ascending: true });
 
@@ -117,7 +137,9 @@ export default function DashboardPage() {
 
       const points = Array.from(byHour.entries()).map(([hour, bucket]) => ({
         hour,
-        score: bucket.scoreCount ? Math.round(bucket.scoreSum / bucket.scoreCount) : 0,
+        score: bucket.scoreCount
+          ? Math.round(bucket.scoreSum / bucket.scoreCount)
+          : 0,
         status: bucket.lastStatus,
         mean_flight_ms: Math.round(bucket.flightSum / bucket.windowCount),
         backspace_percentage:
@@ -149,7 +171,9 @@ export default function DashboardPage() {
         ),
         backspacePct:
           Math.round(
-            (points.reduce((s, p) => s + p.backspace_percentage, 0) / points.length) * 10
+            (points.reduce((s, p) => s + p.backspace_percentage, 0) /
+              points.length) *
+              10
           ) / 10,
         activeMinutes: Math.round(
           points.reduce((s, p) => s + p.active_typing_seconds, 0) / 60
@@ -174,17 +198,26 @@ export default function DashboardPage() {
                 Henüz bugün için ritim verisi yok
               </h1>
               <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Eklenti yüklü ve takip açıksa, yazmaya başladıktan sonra her 3 dakikada
-                bir anonim özet buraya düşer. İlk 2 pencere baseline kalibrasyonu için
-                kullanılır.
+                Eklenti yüklü ve takip açıksa, yazmaya başladıktan sonra her 3
+                dakikada bir anonim özet buraya düşer. İlk 2 pencere baseline
+                kalibrasyonu için kullanılır.
               </p>
               <div className="mt-6 grid gap-3 text-left md:grid-cols-3">
-                <div className="ns-panel-muted"><b>1.</b> Eklenti açık mı?</div>
-                <div className="ns-panel-muted"><b>2.</b> Takip ayarı aktif mi?</div>
-                <div className="ns-panel-muted"><b>3.</b> 3 dakika yazma ritmi oluştu mu?</div>
+                <div className="ns-panel-muted">
+                  <b>1.</b> Eklenti açık mı?
+                </div>
+                <div className="ns-panel-muted">
+                  <b>2.</b> Takip ayarı aktif mi?
+                </div>
+                <div className="ns-panel-muted">
+                  <b>3.</b> 3 dakika yazma ritmi oluştu mu?
+                </div>
               </div>
               <div className="mt-6 flex flex-wrap justify-center gap-3">
-                <button onClick={() => location.reload()} className="ns-button-primary">
+                <button
+                  onClick={() => location.reload()}
+                  className="ns-button-primary"
+                >
                   Yenile
                 </button>
                 <Link href="/settings" className="ns-button-secondary">
@@ -199,7 +232,9 @@ export default function DashboardPage() {
   }
 
   const scored = daily.filter((p) => p.score > 0);
-  const trend: TrendDirection = detectTrend(scored.map((p) => p.score).slice(-6));
+  const trend: TrendDirection = detectTrend(
+    scored.map((p) => p.score).slice(-6)
+  );
   const scoreRange = scored.length
     ? `${Math.min(...scored.map((p) => p.score))}–${Math.max(...scored.map((p) => p.score))}`
     : "—";
@@ -216,7 +251,8 @@ export default function DashboardPage() {
               Dashboard
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-              İçerik saklamadan, yalnızca yazma ritminizden oluşan odak görünümü.
+              İçerik saklamadan, yalnızca yazma ritminizden oluşan odak
+              görünümü.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -241,7 +277,9 @@ export default function DashboardPage() {
                   {summary.currentScore}
                 </div>
                 <div className="pb-2 text-sm font-semibold text-slate-500">
-                  /100<br />güncel skor
+                  /100
+                  <br />
+                  güncel skor
                 </div>
               </div>
               <p className="mt-5 max-w-xl text-base leading-7 text-slate-700 dark:text-slate-200">
@@ -269,22 +307,58 @@ export default function DashboardPage() {
                   Gizlilik modu
                 </div>
                 <div className="mt-2 text-2xl font-black">Metin yok</div>
-                <div className="text-xs text-slate-500">sadece anonim metrik</div>
+                <div className="text-xs text-slate-500">
+                  sadece anonim metrik
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard label="Bugünkü Ortalama" value={summary.todayAverage} accent="cyan" icon="◎" sub="0-100 skala" tone="strong" />
-          <StatCard label="En Verimli Saat" value={summary.bestHour} accent="green" icon="↟" />
-          <StatCard label="En Düşük Odak" value={summary.worstHour} accent="amber" icon="↡" />
-          <StatCard label="Aktif Yazma" value={`${summary.activeMinutes} dk`} accent="purple" icon="⌁" />
+          <StatCard
+            label="Bugünkü Ortalama"
+            value={summary.todayAverage}
+            accent="cyan"
+            icon="◎"
+            sub="0-100 skala"
+            tone="strong"
+          />
+          <StatCard
+            label="En Verimli Saat"
+            value={summary.bestHour}
+            accent="green"
+            icon="↟"
+          />
+          <StatCard
+            label="En Düşük Odak"
+            value={summary.worstHour}
+            accent="amber"
+            icon="↡"
+          />
+          <StatCard
+            label="Aktif Yazma"
+            value={`${summary.activeMinutes} dk`}
+            accent="purple"
+            icon="⌁"
+          />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <StatCard label="Ort. Yazma Hızı" value={`${summary.avgFlightMs} ms`} accent="indigo" sub="tuşlar arası ortalama" caption="Düşük sapma daha stabil ritim demektir." />
-          <StatCard label="Backspace Oranı" value={`%${summary.backspacePct}`} accent="red" sub="düzeltme yoğunluğu" caption="İçerik değil yalnızca düzeltme oranı tutulur." />
+          <StatCard
+            label="Ort. Yazma Hızı"
+            value={`${summary.avgFlightMs} ms`}
+            accent="indigo"
+            sub="tuşlar arası ortalama"
+            caption="Düşük sapma daha stabil ritim demektir."
+          />
+          <StatCard
+            label="Backspace Oranı"
+            value={`%${summary.backspacePct}`}
+            accent="red"
+            sub="düzeltme yoğunluğu"
+            caption="İçerik değil yalnızca düzeltme oranı tutulur."
+          />
         </div>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

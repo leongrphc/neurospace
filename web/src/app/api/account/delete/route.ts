@@ -15,58 +15,77 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/supabase/server";
+import { logger, newRequestId } from "@/lib/logger";
+
+const ROUTE = "POST /api/account/delete";
 
 export async function POST(req: NextRequest) {
-  const auth = await authenticateRequest(req.headers.get("authorization"));
-  if (!auth) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const { user, supabase } = auth;
-
-  let mode = "data";
+  const requestId = newRequestId();
   try {
-    const body = await req.json();
-    if (body?.mode === "account") mode = "account";
-  } catch {
-    // gövde yoksa varsayılan: yalnızca veri sil
+    const auth = await authenticateRequest(req.headers.get("authorization"));
+    if (!auth) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const { user, supabase } = auth;
+
+    let mode = "data";
+    try {
+      const body = await req.json();
+      if (body?.mode === "account") mode = "account";
+    } catch {
+      // gövde yoksa varsayılan: yalnızca veri sil
+    }
+
+    // Sıra önemli: önce raporlar (window'a FK), sonra windows ve baselines.
+    const delReports = await supabase
+      .from("analysis_reports")
+      .delete()
+      .eq("user_id", user.id);
+    const delWindows = await supabase
+      .from("typing_windows")
+      .delete()
+      .eq("user_id", user.id);
+    const delBaselines = await supabase
+      .from("baselines")
+      .delete()
+      .eq("user_id", user.id);
+
+    const firstErr = delReports.error || delWindows.error || delBaselines.error;
+    if (firstErr) {
+      logger.error("account delete failed", firstErr, {
+        requestId,
+        route: ROUTE,
+        userId: user.id,
+        mode,
+      });
+      return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+    }
+
+    if (mode === "account") {
+      // Profil + ayarları da temizle (RLS: yalnızca kendi satırı)
+      await supabase.from("user_settings").delete().eq("user_id", user.id);
+      await supabase.from("users").delete().eq("id", user.id);
+    }
+
+    return NextResponse.json(
+      {
+        ok: true,
+        mode,
+        message:
+          mode === "account"
+            ? "Tüm verileriniz ve profiliniz silindi. Auth kaydını tamamen kaldırmak için çıkış yapıp hesabı kapatma talebinde bulunabilirsiniz."
+            : "Tüm yazma verileriniz silindi. Hesabınız korundu; sıfırdan kalibrasyona başlayabilirsiniz.",
+      },
+      { status: 200 }
+    );
+  } catch (err) {
+    logger.error("account delete endpoint error", err, {
+      requestId,
+      route: ROUTE,
+    });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
-
-  // Sıra önemli: önce raporlar (window'a FK), sonra windows ve baselines.
-  const delReports = await supabase
-    .from("analysis_reports")
-    .delete()
-    .eq("user_id", user.id);
-  const delWindows = await supabase
-    .from("typing_windows")
-    .delete()
-    .eq("user_id", user.id);
-  const delBaselines = await supabase
-    .from("baselines")
-    .delete()
-    .eq("user_id", user.id);
-
-  const firstErr =
-    delReports.error || delWindows.error || delBaselines.error;
-  if (firstErr) {
-    console.error("account delete failed:", firstErr.message);
-    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
-  }
-
-  if (mode === "account") {
-    // Profil + ayarları da temizle (RLS: yalnızca kendi satırı)
-    await supabase.from("user_settings").delete().eq("user_id", user.id);
-    await supabase.from("users").delete().eq("id", user.id);
-  }
-
-  return NextResponse.json(
-    {
-      ok: true,
-      mode,
-      message:
-        mode === "account"
-          ? "Tüm verileriniz ve profiliniz silindi. Auth kaydını tamamen kaldırmak için çıkış yapıp hesabı kapatma talebinde bulunabilirsiniz."
-          : "Tüm yazma verileriniz silindi. Hesabınız korundu; sıfırdan kalibrasyona başlayabilirsiniz.",
-    },
-    { status: 200 }
-  );
 }

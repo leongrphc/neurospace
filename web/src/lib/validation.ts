@@ -32,10 +32,17 @@ export function validateTypingWindow(
   const errors: ValidationError[] = [];
   const b = (body ?? {}) as Record<string, unknown>;
 
-  const numField = (field: string, min: number, max: number): number | undefined => {
+  const numField = (
+    field: string,
+    min: number,
+    max: number
+  ): number | undefined => {
     const v = b[field];
     if (!isNum(v) || v < min || v > max) {
-      errors.push({ field, message: `must be a number between ${min} and ${max}` });
+      errors.push({
+        field,
+        message: `must be a number between ${min} and ${max}`,
+      });
       return undefined;
     }
     return v;

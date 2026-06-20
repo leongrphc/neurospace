@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
     "test": "tsx --test src/lib/*.test.ts"
   },
   "dependencies": {
@@ -21,7 +23,11 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.19",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
+    "eslint-config-prettier": "^10.1.8",
     "postcss": "^8.4.39",
+    "prettier": "^3.8.4",
     "tailwindcss": "^3.4.6",
     "tsx": "^4.22.4",
     "typescript": "^5.5.3"

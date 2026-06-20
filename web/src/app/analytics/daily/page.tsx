@@ -48,7 +48,9 @@ export default function DailyAnalyticsPage() {
 
       const { data: windows } = await supabase
         .from("typing_windows")
-        .select("mean_flight_ms, backspace_percentage, active_typing_seconds, created_at")
+        .select(
+          "mean_flight_ms, backspace_percentage, active_typing_seconds, created_at"
+        )
         .gte("created_at", since.toISOString())
         .order("created_at", { ascending: true });
 
@@ -89,10 +91,13 @@ export default function DailyAnalyticsPage() {
                 Bugün için henüz grafik yok
               </h1>
               <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Eklenti açıkken yazmaya başladığınızda skor, ritim, düzeltme ve aktif
-                yazma grafikleri burada oluşur.
+                Eklenti açıkken yazmaya başladığınızda skor, ritim, düzeltme ve
+                aktif yazma grafikleri burada oluşur.
               </p>
-              <button onClick={() => location.reload()} className="ns-button-primary mt-6">
+              <button
+                onClick={() => location.reload()}
+                className="ns-button-primary mt-6"
+              >
                 Yenile
               </button>
             </div>
@@ -107,8 +112,13 @@ export default function DailyAnalyticsPage() {
     ? Math.round(scored.reduce((sum, p) => sum + p.score, 0) / scored.length)
     : 0;
   const avgBackspace =
-    Math.round((data.reduce((sum, p) => sum + p.backspace_percentage, 0) / data.length) * 10) / 10;
-  const activeMinutes = Math.round(data.reduce((sum, p) => sum + p.active_typing_seconds, 0) / 60);
+    Math.round(
+      (data.reduce((sum, p) => sum + p.backspace_percentage, 0) / data.length) *
+        10
+    ) / 10;
+  const activeMinutes = Math.round(
+    data.reduce((sum, p) => sum + p.active_typing_seconds, 0) / 60
+  );
 
   return (
     <AppShell requireConsent>
@@ -120,7 +130,8 @@ export default function DailyAnalyticsPage() {
               Günlük Analiz
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Gün içinde skorun, tuş ritmin ve düzeltme yoğunluğun nasıl dalgalanıyor?
+              Gün içinde skorun, tuş ritmin ve düzeltme yoğunluğun nasıl
+              dalgalanıyor?
             </p>
           </div>
           {mode === "demo" && (
@@ -131,24 +142,48 @@ export default function DailyAnalyticsPage() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <StatCard label="Ortalama Skor" value={avgScore || "—"} accent="cyan" icon="◎" sub="bugünkü gerçek skorlar" tone="strong" />
-          <StatCard label="Backspace Ort." value={`%${avgBackspace}`} accent="red" icon="⌫" sub="düzeltme yoğunluğu" />
-          <StatCard label="Aktif Yazma" value={`${activeMinutes} dk`} accent="purple" icon="⌁" sub={`${data.length} saatlik özet`} />
+          <StatCard
+            label="Ortalama Skor"
+            value={avgScore || "—"}
+            accent="cyan"
+            icon="◎"
+            sub="bugünkü gerçek skorlar"
+            tone="strong"
+          />
+          <StatCard
+            label="Backspace Ort."
+            value={`%${avgBackspace}`}
+            accent="red"
+            icon="⌫"
+            sub="düzeltme yoğunluğu"
+          />
+          <StatCard
+            label="Aktif Yazma"
+            value={`${activeMinutes} dk`}
+            accent="purple"
+            icon="⌁"
+            sub={`${data.length} saatlik özet`}
+          />
         </div>
 
         <div className="ns-card">
           <div className="grid gap-4 md:grid-cols-3">
             <div>
-              <div className="text-sm font-black text-slate-900 dark:text-white">Nasıl okunur?</div>
+              <div className="text-sm font-black text-slate-900 dark:text-white">
+                Nasıl okunur?
+              </div>
               <p className="mt-1 text-xs leading-5 text-slate-500">
-                Yükselen flight time veya backspace, odak düşüşü için erken sinyal olabilir.
+                Yükselen flight time veya backspace, odak düşüşü için erken
+                sinyal olabilir.
               </p>
             </div>
             <div className="text-xs leading-5 text-slate-500">
-              <b className="text-slate-700 dark:text-slate-200">Skor</b> 0-100 arasıdır ve baseline’a göre sapmayı gösterir.
+              <b className="text-slate-700 dark:text-slate-200">Skor</b> 0-100
+              arasıdır ve baseline’a göre sapmayı gösterir.
             </div>
             <div className="text-xs leading-5 text-slate-500">
-              <b className="text-slate-700 dark:text-slate-200">Gizlilik</b> grafikte görülen her şey anonim özet metriklerden oluşur.
+              <b className="text-slate-700 dark:text-slate-200">Gizlilik</b>{" "}
+              grafikte görülen her şey anonim özet metriklerden oluşur.
             </div>
           </div>
         </div>

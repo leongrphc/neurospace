@@ -91,12 +91,18 @@ export function detectTrend(recentScores: number[]): TrendDirection {
 }
 
 const RECOMMENDATIONS: Record<AnalysisStatus, string> = {
-  INSUFFICIENT_DATA: "Analiz için yeterli yazma verisi yok. Yazmaya devam edin.",
-  OPTIMAL: "Harika gidiyorsunuz! Akış halindesiniz, bu temponun keyfini çıkarın.",
-  SLIGHTLY_DISTRACTED: "Hafif bir odak kaybı var. Bildirimleri kapatmayı deneyin.",
-  WARNING: "Odak düşüşü sinyali algılandı. 5 dakikalık kısa bir mola iyi gelebilir.",
-  FATIGUED: "Belirgin yorgunluk sinyali. 15-20 dakikalık bir mola ve su molası önerilir.",
-  RECOVERING: "Toparlanma görülüyor. Hafif görevlerle devam edin, tempoyu yavaşça artırın.",
+  INSUFFICIENT_DATA:
+    "Analiz için yeterli yazma verisi yok. Yazmaya devam edin.",
+  OPTIMAL:
+    "Harika gidiyorsunuz! Akış halindesiniz, bu temponun keyfini çıkarın.",
+  SLIGHTLY_DISTRACTED:
+    "Hafif bir odak kaybı var. Bildirimleri kapatmayı deneyin.",
+  WARNING:
+    "Odak düşüşü sinyali algılandı. 5 dakikalık kısa bir mola iyi gelebilir.",
+  FATIGUED:
+    "Belirgin yorgunluk sinyali. 15-20 dakikalık bir mola ve su molası önerilir.",
+  RECOVERING:
+    "Toparlanma görülüyor. Hafif görevlerle devam edin, tempoyu yavaşça artırın.",
 };
 
 function clamp(v: number, min: number, max: number): number {
@@ -146,8 +152,8 @@ export function analyzeWindow(
     baseline.backspaceRatio > 0
       ? current.backspace_percentage / baseline.backspaceRatio
       : current.backspace_percentage > 0
-      ? 2 // baseline 0 iken backspace varsa belirgin sapma say
-      : 1;
+        ? 2 // baseline 0 iken backspace varsa belirgin sapma say
+        : 1;
   const pauseDeviation =
     baseline.pauseRatio > 0 ? current.pause_ratio / baseline.pauseRatio : 1;
 
@@ -220,7 +226,8 @@ export function analyzeWindow(
   let recommendation = RECOMMENDATIONS[status];
   const positiveStatus = status === "RECOVERING" || status === "OPTIMAL";
   if (trend === "declining" && !positiveStatus && status !== "FATIGUED") {
-    recommendation += " Son ölçümlerde düşüş eğilimi var; yakında mola planlayın.";
+    recommendation +=
+      " Son ölçümlerde düşüş eğilimi var; yakında mola planlayın.";
   } else if (trend === "recovering" && status !== "OPTIMAL") {
     recommendation += " İyiye gidiyorsunuz, tempoyu koruyun.";
   }

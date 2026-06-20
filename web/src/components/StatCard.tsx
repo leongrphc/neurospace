@@ -3,7 +3,10 @@ import type { AnalysisStatus, TrendDirection } from "@/lib/analysis-engine";
 type Accent = "indigo" | "purple" | "cyan" | "green" | "amber" | "red";
 type Tone = "default" | "quiet" | "strong";
 
-const ACCENT_CLASSES: Record<Accent, { text: string; glow: string; chip: string }> = {
+const ACCENT_CLASSES: Record<
+  Accent,
+  { text: string; glow: string; chip: string }
+> = {
   indigo: {
     text: "text-indigo-600 dark:text-indigo-300",
     glow: "from-indigo-500/[0.18] to-indigo-500/0",
@@ -69,18 +72,27 @@ export function StatCard({
           <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
             {label}
           </div>
-          <div className={`mt-2 text-3xl font-black tracking-tight ${accentStyle.text}`}>
+          <div
+            className={`mt-2 text-3xl font-black tracking-tight ${accentStyle.text}`}
+          >
             {value}
           </div>
           {(sub || caption) && (
             <div className="mt-2 space-y-1">
-              {sub && <div className="text-xs font-medium text-slate-500">{sub}</div>}
-              {caption && <div className="text-[11px] text-slate-400">{caption}</div>}
+              {sub && (
+                <div className="text-xs font-medium text-slate-500">{sub}</div>
+              )}
+              {caption && (
+                <div className="text-[11px] text-slate-400">{caption}</div>
+              )}
             </div>
           )}
         </div>
         {icon && (
-          <div className={`rounded-2xl px-3 py-2 text-lg ${accentStyle.chip}`} aria-hidden>
+          <div
+            className={`rounded-2xl px-3 py-2 text-lg ${accentStyle.chip}`}
+            aria-hidden
+          >
             {icon}
           </div>
         )}
@@ -89,7 +101,10 @@ export function StatCard({
   );
 }
 
-const STATUS_STYLE: Record<AnalysisStatus, { label: string; cls: string; dot: string }> = {
+const STATUS_STYLE: Record<
+  AnalysisStatus,
+  { label: string; cls: string; dot: string }
+> = {
   INSUFFICIENT_DATA: {
     label: "Yetersiz veri",
     cls: "bg-slate-500/10 text-slate-600 dark:text-slate-300",
@@ -125,7 +140,9 @@ const STATUS_STYLE: Record<AnalysisStatus, { label: string; cls: string; dot: st
 export function StatusBadge({ status }: { status: AnalysisStatus }) {
   const s = STATUS_STYLE[status] ?? STATUS_STYLE.INSUFFICIENT_DATA;
   return (
-    <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold ${s.cls}`}>
+    <span
+      className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold ${s.cls}`}
+    >
       <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} aria-hidden />
       {s.label}
     </span>

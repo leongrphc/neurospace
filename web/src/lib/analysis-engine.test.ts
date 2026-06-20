@@ -153,7 +153,15 @@ test("RECOVERING/OPTIMAL durumunda düşüş uyarısı eklenmez (çelişki yok)"
 
 // ---- Baseline hesaplama ----------------------------------------------------
 test("computeBaseline yetersiz pencerede null döner", () => {
-  const rows = [{ mean_flight_ms: 100, median_flight_ms: 92, backspace_percentage: 5, pause_ratio: 0.18, total_samples: 120 }];
+  const rows = [
+    {
+      mean_flight_ms: 100,
+      median_flight_ms: 92,
+      backspace_percentage: 5,
+      pause_ratio: 0.18,
+      total_samples: 120,
+    },
+  ];
   assert.equal(computeBaseline(rows), null);
 });
 

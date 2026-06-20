@@ -18,6 +18,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/supabase/server";
 import { validateTypingWindow } from "@/lib/validation";
+import { logger, newRequestId } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
 import {
   analyzeWindow,
   computeBaseline,
@@ -29,7 +31,15 @@ import {
   type UserBaseline,
 } from "@/lib/analysis-engine";
 
+const ROUTE = "POST /api/typing-window";
+
+// Normal kullanım 3 dakikada 1 penceredir; 60 sn'de 10 sınırı normali
+// engellemeden bariz kötüye kullanımı (sel/spam) durdurur.
+const RATE_WINDOW_SECONDS = 60;
+const RATE_MAX_IN_WINDOW = 10;
+
 export async function POST(req: NextRequest) {
+  const requestId = newRequestId();
   try {
     // 1) Kimlik doğrulama --------------------------------------------------
     const auth = await authenticateRequest(req.headers.get("authorization"));
@@ -37,6 +47,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const { user, supabase } = auth;
+
+    // 1a) Rate limit (kullanıcı bazlı, Supabase sayımı) --------------------
+    const rate = await checkRateLimit(supabase, user.id, {
+      table: "typing_windows",
+      windowSeconds: RATE_WINDOW_SECONDS,
+      maxInWindow: RATE_MAX_IN_WINDOW,
+    });
+    if (!rate.allowed) {
+      logger.warn("rate limit exceeded", {
+        requestId,
+        route: ROUTE,
+        userId: user.id,
+        count: rate.count,
+      });
+      return NextResponse.json(
+        { error: "Too many requests" },
+        {
+          status: 429,
+          headers: { "Retry-After": String(rate.retryAfterSeconds) },
+        }
+      );
+    }
 
     // 2) Payload doğrulama --------------------------------------------------
     let body: unknown;
@@ -60,7 +92,11 @@ export async function POST(req: NextRequest) {
       .select("id")
       .single();
     if (insertErr) {
-      console.error("typing_windows insert failed:", insertErr.message);
+      logger.error("typing_windows insert failed", insertErr, {
+        requestId,
+        route: ROUTE,
+        userId: user.id,
+      });
       return NextResponse.json({ error: "Storage error" }, { status: 500 });
     }
 
@@ -158,16 +194,22 @@ export async function POST(req: NextRequest) {
 
     const result = analyzeWindow(baseline, data, previousStatus, recentScores);
 
-    const { error: reportErr } = await supabase.from("analysis_reports").insert({
-      user_id: user.id,
-      typing_window_id: windowRow.id,
-      time_bucket: bucket,
-      status: result.status,
-      score: result.score,
-      recommendation: result.recommendation,
-    });
+    const { error: reportErr } = await supabase
+      .from("analysis_reports")
+      .insert({
+        user_id: user.id,
+        typing_window_id: windowRow.id,
+        time_bucket: bucket,
+        status: result.status,
+        score: result.score,
+        recommendation: result.recommendation,
+      });
     if (reportErr) {
-      console.error("analysis_reports insert failed:", reportErr.message);
+      logger.error("analysis_reports insert failed", reportErr, {
+        requestId,
+        route: ROUTE,
+        userId: user.id,
+      });
     }
 
     return NextResponse.json(
@@ -181,7 +223,13 @@ export async function POST(req: NextRequest) {
     );
   } catch (err) {
     // GÜVENLİK: İç hata detayları istemciye sızdırılmaz.
-    console.error("typing-window endpoint error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    logger.error("typing-window endpoint error", err, {
+      requestId,
+      route: ROUTE,
+    });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

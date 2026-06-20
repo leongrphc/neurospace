@@ -86,8 +86,8 @@ export function AppShell({
           <div className="mb-2 font-bold text-cyan-700 dark:text-cyan-200">
             İçerik değil ritim ölçülür.
           </div>
-          Karakter, kelime veya metin saklanmadan yalnızca anonim yazma metrikleri
-          analiz edilir.
+          Karakter, kelime veya metin saklanmadan yalnızca anonim yazma
+          metrikleri analiz edilir.
         </div>
 
         <nav className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
@@ -103,12 +103,18 @@ export function AppShell({
                     : "text-slate-600 hover:bg-white/80 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/[0.06] dark:hover:text-white"
                 }`}
               >
-                <span className="mr-2 inline-flex w-5 justify-center opacity-80" aria-hidden>
+                <span
+                  className="mr-2 inline-flex w-5 justify-center opacity-80"
+                  aria-hidden
+                >
                   {item.icon}
                 </span>
                 {item.label}
                 {active && (
-                  <span className="ml-auto hidden text-cyan-300 dark:text-cyan-600 lg:inline" aria-hidden>
+                  <span
+                    className="ml-auto hidden text-cyan-300 dark:text-cyan-600 lg:inline"
+                    aria-hidden
+                  >
                     ●
                   </span>
                 )}

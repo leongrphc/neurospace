@@ -25,7 +25,9 @@ function Toggle({
     <div className="flex items-center justify-between gap-4 border-b border-slate-200/70 py-5 last:border-0 dark:border-white/10">
       <div className="pr-4">
         <div className="font-bold text-slate-950 dark:text-white">{label}</div>
-        <div className="mt-1 text-sm leading-5 text-slate-500 dark:text-slate-400">{desc}</div>
+        <div className="mt-1 text-sm leading-5 text-slate-500 dark:text-slate-400">
+          {desc}
+        </div>
       </div>
       <button
         type="button"
@@ -182,19 +184,34 @@ export default function SettingsPage() {
         <section className="ns-hero-card">
           <div className="relative grid gap-5 md:grid-cols-[0.9fr_1.1fr] md:items-center">
             <div>
-              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Gizlilik varsayılanı</p>
+              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                Gizlilik varsayılanı
+              </p>
               <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white">
                 Kontrol sende, içerik sistemin dışında.
               </h2>
               <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                NeuroSpace yalnızca anonim ritim özetleriyle çalışır. Dilediğinde ölçümü
-                kapatabilir, verilerini indirebilir veya silebilirsin.
+                NeuroSpace yalnızca anonim ritim özetleriyle çalışır.
+                Dilediğinde ölçümü kapatabilir, verilerini indirebilir veya
+                silebilirsin.
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="ns-panel-muted"><b>Metin</b><br /><span className="text-xs text-slate-500">asla saklanmaz</span></div>
-              <div className="ns-panel-muted"><b>Ritim</b><br /><span className="text-xs text-slate-500">anonim özetlenir</span></div>
-              <div className="ns-panel-muted"><b>Haklar</b><br /><span className="text-xs text-slate-500">indir / sil</span></div>
+              <div className="ns-panel-muted">
+                <b>Metin</b>
+                <br />
+                <span className="text-xs text-slate-500">asla saklanmaz</span>
+              </div>
+              <div className="ns-panel-muted">
+                <b>Ritim</b>
+                <br />
+                <span className="text-xs text-slate-500">anonim özetlenir</span>
+              </div>
+              <div className="ns-panel-muted">
+                <b>Haklar</b>
+                <br />
+                <span className="text-xs text-slate-500">indir / sil</span>
+              </div>
             </div>
           </div>
         </section>
@@ -205,7 +222,9 @@ export default function SettingsPage() {
               <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">
                 Takip tercihleri
               </h2>
-              <p className="mt-1 text-sm text-slate-500">Ölçümün ne zaman aktif olacağını belirle.</p>
+              <p className="mt-1 text-sm text-slate-500">
+                Ölçümün ne zaman aktif olacağını belirle.
+              </p>
             </div>
           </div>
 
@@ -226,11 +245,16 @@ export default function SettingsPage() {
             <button onClick={save} className="ns-button-primary">
               Kaydet
             </button>
-            {saved && <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-300">Kaydedildi ✓</span>}
+            {saved && (
+              <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-300">
+                Kaydedildi ✓
+              </span>
+            )}
           </div>
 
           <p className="mt-4 text-xs leading-5 text-slate-500">
-            Site bazlı takip dışı bırakma, tarayıcı eklentisinin <strong>Ayarlar</strong> sayfasından yapılır.
+            Site bazlı takip dışı bırakma, tarayıcı eklentisinin{" "}
+            <strong>Ayarlar</strong> sayfasından yapılır.
           </p>
         </section>
 
@@ -241,8 +265,9 @@ export default function SettingsPage() {
                 Verilerim
               </h2>
               <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Verileriniz yalnızca anonim yazma ritmi metriklerinden oluşur. Bu bölüm
-                KVKK/GDPR veri taşınabilirliği ve silme hakları için tasarlandı.
+                Verileriniz yalnızca anonim yazma ritmi metriklerinden oluşur.
+                Bu bölüm KVKK/GDPR veri taşınabilirliği ve silme hakları için
+                tasarlandı.
               </p>
             </div>
           </div>
@@ -254,8 +279,12 @@ export default function SettingsPage() {
               className="ns-button-secondary justify-start text-left"
             >
               <span>
-                <span className="block">{busy === "export" ? "İndiriliyor..." : "Verilerimi indir"}</span>
-                <span className="block text-xs font-normal opacity-70">JSON formatında dışa aktar</span>
+                <span className="block">
+                  {busy === "export" ? "İndiriliyor..." : "Verilerimi indir"}
+                </span>
+                <span className="block text-xs font-normal opacity-70">
+                  JSON formatında dışa aktar
+                </span>
               </span>
             </button>
             <button
@@ -264,8 +293,12 @@ export default function SettingsPage() {
               className="inline-flex items-center justify-start rounded-2xl border border-amber-300/80 bg-amber-50/70 px-5 py-3 text-left text-sm font-semibold text-amber-800 transition hover:-translate-y-0.5 hover:bg-amber-100 disabled:pointer-events-none disabled:opacity-50 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200"
             >
               <span>
-                <span className="block">{busy === "data" ? "Siliniyor..." : "Yazma verilerimi sil"}</span>
-                <span className="block text-xs font-normal opacity-75">Hesap kalır, ölçümler silinir</span>
+                <span className="block">
+                  {busy === "data" ? "Siliniyor..." : "Yazma verilerimi sil"}
+                </span>
+                <span className="block text-xs font-normal opacity-75">
+                  Hesap kalır, ölçümler silinir
+                </span>
               </span>
             </button>
             <button
@@ -274,15 +307,23 @@ export default function SettingsPage() {
               className="inline-flex items-center justify-start rounded-2xl border border-rose-300/80 bg-rose-50/70 px-5 py-3 text-left text-sm font-semibold text-rose-800 transition hover:-translate-y-0.5 hover:bg-rose-100 disabled:pointer-events-none disabled:opacity-50 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-200"
             >
               <span>
-                <span className="block">{busy === "account" ? "Siliniyor..." : "Profil + tüm veriler"}</span>
-                <span className="block text-xs font-normal opacity-75">Kalıcı hesap silme</span>
+                <span className="block">
+                  {busy === "account" ? "Siliniyor..." : "Profil + tüm veriler"}
+                </span>
+                <span className="block text-xs font-normal opacity-75">
+                  Kalıcı hesap silme
+                </span>
               </span>
             </button>
           </div>
 
           {demo && (
             <p className="mt-4 rounded-2xl bg-amber-500/10 px-4 py-3 text-xs leading-5 text-amber-700 dark:text-amber-200">
-              Veri işlemleri için <Link href="/login" className="font-bold underline">giriş</Link> yapmanız gerekir.
+              Veri işlemleri için{" "}
+              <Link href="/login" className="font-bold underline">
+                giriş
+              </Link>{" "}
+              yapmanız gerekir.
             </p>
           )}
           {dataMsg && (

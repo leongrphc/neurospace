@@ -50,7 +50,8 @@ export function demoDailyData(): HourPoint[] {
       hour: `${String(h).padStart(2, "0")}:00`,
       score,
       mean_flight_ms: Math.round(95 + (100 - score) * 0.9 + rand() * 12),
-      backspace_percentage: Math.round((4 + (100 - score) * 0.08 + rand() * 2) * 10) / 10,
+      backspace_percentage:
+        Math.round((4 + (100 - score) * 0.08 + rand() * 2) * 10) / 10,
       active_typing_seconds: Math.round(60 + rand() * 110),
       status: statusFromScore(score),
     });
@@ -80,9 +81,16 @@ export function demoSummary() {
     todayAverage: avg,
     bestHour: best.hour,
     worstHour: worst.hour,
-    avgFlightMs: Math.round(daily.reduce((s, p) => s + p.mean_flight_ms, 0) / daily.length),
+    avgFlightMs: Math.round(
+      daily.reduce((s, p) => s + p.mean_flight_ms, 0) / daily.length
+    ),
     backspacePct:
-      Math.round((daily.reduce((s, p) => s + p.backspace_percentage, 0) / daily.length) * 10) / 10,
-    activeMinutes: Math.round(daily.reduce((s, p) => s + p.active_typing_seconds, 0) / 60),
+      Math.round(
+        (daily.reduce((s, p) => s + p.backspace_percentage, 0) / daily.length) *
+          10
+      ) / 10,
+    activeMinutes: Math.round(
+      daily.reduce((s, p) => s + p.active_typing_seconds, 0) / 60
+    ),
   };
 }

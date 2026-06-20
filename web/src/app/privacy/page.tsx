@@ -43,7 +43,9 @@ export default function PrivacyPage() {
         </div>
 
         <div className="ns-card mb-4 border-l-4 border-l-green-500">
-          <h2 className="mb-3 font-semibold text-green-500">Yalnızca bunlar ölçülür</h2>
+          <h2 className="mb-3 font-semibold text-green-500">
+            Yalnızca bunlar ölçülür
+          </h2>
           <ul className="space-y-2">
             {ONLY.map((item) => (
               <li key={item} className="flex items-start gap-2 text-sm">
@@ -57,11 +59,20 @@ export default function PrivacyPage() {
         <div className="ns-card">
           <h2 className="mb-3 font-semibold">Ek güvenceler</h2>
           <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
-            <li>• Şifre, kredi kartı, OTP ve ödeme alanlarında ölçüm tamamen devre dışıdır.</li>
+            <li>
+              • Şifre, kredi kartı, OTP ve ödeme alanlarında ölçüm tamamen devre
+              dışıdır.
+            </li>
             <li>• Gizli pencerede eklenti varsayılan olarak çalışmaz.</li>
             <li>• Veri yalnızca HTTPS üzerinden gönderilir.</li>
-            <li>• Her kullanıcı yalnızca kendi verisini görür (Row Level Security).</li>
-            <li>• Takibi istediğiniz an kapatabilir, siteleri hariç tutabilirsiniz.</li>
+            <li>
+              • Her kullanıcı yalnızca kendi verisini görür (Row Level
+              Security).
+            </li>
+            <li>
+              • Takibi istediğiniz an kapatabilir, siteleri hariç
+              tutabilirsiniz.
+            </li>
           </ul>
         </div>
 
@@ -69,9 +80,10 @@ export default function PrivacyPage() {
         <div className="ns-card mt-4 border-l-4 border-l-amber-500">
           <h2 className="mb-2 font-semibold text-amber-500">Önemli uyarı</h2>
           <p className="text-sm text-slate-600 dark:text-slate-300">
-            NeuroSpace bir <strong>tıbbi cihaz veya teşhis aracı değildir</strong>.
-            Ürettiği skorlar ve "odak/yorgunluk" sinyalleri yalnızca genel bir
-            farkındalık amacı taşır; tıbbi, psikolojik veya mesleki bir
+            NeuroSpace bir{" "}
+            <strong>tıbbi cihaz veya teşhis aracı değildir</strong>. Ürettiği
+            skorlar ve &ldquo;odak/yorgunluk&rdquo; sinyalleri yalnızca genel
+            bir farkındalık amacı taşır; tıbbi, psikolojik veya mesleki bir
             değerlendirme yerine geçmez. Sağlığınızla ilgili kararlar için bir
             uzmana danışın.
           </p>

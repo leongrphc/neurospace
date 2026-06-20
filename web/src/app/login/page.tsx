@@ -28,7 +28,9 @@ export default function LoginPage() {
     setMessage(null);
 
     if (!supabase) {
-      setMessage("Demo modu: Supabase yapılandırılmadı. Panele yönlendiriliyorsunuz.");
+      setMessage(
+        "Demo modu: Supabase yapılandırılmadı. Panele yönlendiriliyorsunuz."
+      );
       setTimeout(() => router.push("/dashboard"), 1200);
       return;
     }
@@ -38,7 +40,9 @@ export default function LoginPage() {
       if (mode === "register") {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        setMessage("Kayıt başarılı. E-postanızı doğruladıktan sonra giriş yapın.");
+        setMessage(
+          "Kayıt başarılı. E-postanızı doğruladıktan sonra giriş yapın."
+        );
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
@@ -86,7 +90,9 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="mb-1 block text-sm text-slate-500">E-posta</label>
+              <label className="mb-1 block text-sm text-slate-500">
+                E-posta
+              </label>
               <input
                 type="email"
                 required
@@ -131,7 +137,10 @@ export default function LoginPage() {
           )}
 
           <div className="mt-5 text-center">
-            <Link href="/dashboard" className="text-sm text-slate-400 hover:underline">
+            <Link
+              href="/dashboard"
+              className="text-sm text-slate-400 hover:underline"
+            >
               Demo paneli gör →
             </Link>
           </div>

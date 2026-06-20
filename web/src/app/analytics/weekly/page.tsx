@@ -55,7 +55,8 @@ export default function WeeklyAnalyticsPage() {
         return;
       }
 
-      const buckets: { label: string; scores: number[]; seconds: number }[] = [];
+      const buckets: { label: string; scores: number[]; seconds: number }[] =
+        [];
       const keyToIdx = new Map<string, number>();
       for (let i = 6; i >= 0; i--) {
         const d = new Date();
@@ -68,12 +69,14 @@ export default function WeeklyAnalyticsPage() {
       (reports ?? []).forEach((r) => {
         const key = new Date(r.created_at).toISOString().slice(0, 10);
         const idx = keyToIdx.get(key);
-        if (idx !== undefined && (r.score ?? 0) > 0) buckets[idx].scores.push(r.score);
+        if (idx !== undefined && (r.score ?? 0) > 0)
+          buckets[idx].scores.push(r.score);
       });
       windows.forEach((w) => {
         const key = new Date(w.created_at).toISOString().slice(0, 10);
         const idx = keyToIdx.get(key);
-        if (idx !== undefined) buckets[idx].seconds += w.active_typing_seconds ?? 0;
+        if (idx !== undefined)
+          buckets[idx].seconds += w.active_typing_seconds ?? 0;
       });
 
       setData(
@@ -101,10 +104,13 @@ export default function WeeklyAnalyticsPage() {
                 Haftalık desen için biraz daha veri gerekiyor
               </h1>
               <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Birkaç gün kullanım sonrası skor ve aktif yazma yoğunluğu haftalık
-                bağlamda burada görünür.
+                Birkaç gün kullanım sonrası skor ve aktif yazma yoğunluğu
+                haftalık bağlamda burada görünür.
               </p>
-              <button onClick={() => location.reload()} className="ns-button-primary mt-6">
+              <button
+                onClick={() => location.reload()}
+                className="ns-button-primary mt-6"
+              >
                 Yenile
               </button>
             </div>
@@ -119,7 +125,10 @@ export default function WeeklyAnalyticsPage() {
     ? Math.round(scored.reduce((sum, d) => sum + d.avgScore, 0) / scored.length)
     : 0;
   const totalActive = data.reduce((sum, d) => sum + d.activeMinutes, 0);
-  const mostActive = data.reduce((a, b) => (b.activeMinutes > a.activeMinutes ? b : a), data[0]);
+  const mostActive = data.reduce(
+    (a, b) => (b.activeMinutes > a.activeMinutes ? b : a),
+    data[0]
+  );
   const firstScore = scored[0]?.avgScore ?? 0;
   const lastScore = scored[scored.length - 1]?.avgScore ?? 0;
   const delta = lastScore && firstScore ? lastScore - firstScore : 0;
@@ -134,7 +143,8 @@ export default function WeeklyAnalyticsPage() {
               Haftalık Trend
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Günlük dalgalanmaların ötesine bak: hangi günler daha stabil, hangi günler daha yoğun?
+              Günlük dalgalanmaların ötesine bak: hangi günler daha stabil,
+              hangi günler daha yoğun?
             </p>
           </div>
           {mode === "demo" && (
@@ -147,7 +157,9 @@ export default function WeeklyAnalyticsPage() {
         <section className="ns-hero-card">
           <div className="relative grid gap-5 md:grid-cols-[0.9fr_1.1fr] md:items-center">
             <div>
-              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Haftalık ortalama</p>
+              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                Haftalık ortalama
+              </p>
               <div className="mt-2 text-7xl font-black leading-none tracking-tighter text-slate-950 dark:text-white">
                 {weeklyAverage || "—"}
               </div>
@@ -155,31 +167,57 @@ export default function WeeklyAnalyticsPage() {
                 {delta > 0
                   ? `Hafta başına göre ${delta} puanlık toparlanma görünüyor.`
                   : delta < 0
-                  ? `Hafta başına göre ${Math.abs(delta)} puanlık düşüş var; mola ritmini gözden geçir.`
-                  : "Haftalık skor çizgisi dengeli görünüyor."}
+                    ? `Hafta başına göre ${Math.abs(delta)} puanlık düşüş var; mola ritmini gözden geçir.`
+                    : "Haftalık skor çizgisi dengeli görünüyor."}
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="ns-panel-muted">
-                <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Aktif toplam</div>
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  Aktif toplam
+                </div>
                 <div className="mt-2 text-2xl font-black">{totalActive} dk</div>
               </div>
               <div className="ns-panel-muted">
-                <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">En aktif gün</div>
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  En aktif gün
+                </div>
                 <div className="mt-2 text-2xl font-black">{mostActive.day}</div>
               </div>
               <div className="ns-panel-muted">
-                <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Skor farkı</div>
-                <div className="mt-2 text-2xl font-black">{delta > 0 ? "+" : ""}{delta}</div>
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  Skor farkı
+                </div>
+                <div className="mt-2 text-2xl font-black">
+                  {delta > 0 ? "+" : ""}
+                  {delta}
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <StatCard label="Haftalık Ortalama" value={weeklyAverage || "—"} accent="cyan" icon="◎" tone="strong" />
-          <StatCard label="Toplam Aktif Yazma" value={`${totalActive} dk`} accent="purple" icon="⌁" />
-          <StatCard label="En Aktif Gün" value={mostActive.day} accent="green" icon="↟" sub={`${mostActive.activeMinutes} dk`} />
+          <StatCard
+            label="Haftalık Ortalama"
+            value={weeklyAverage || "—"}
+            accent="cyan"
+            icon="◎"
+            tone="strong"
+          />
+          <StatCard
+            label="Toplam Aktif Yazma"
+            value={`${totalActive} dk`}
+            accent="purple"
+            icon="⌁"
+          />
+          <StatCard
+            label="En Aktif Gün"
+            value={mostActive.day}
+            accent="green"
+            icon="↟"
+            sub={`${mostActive.activeMinutes} dk`}
+          />
         </div>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

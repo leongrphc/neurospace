@@ -72,7 +72,10 @@ export function ScoreAreaChart({ data }: { data: HourPoint[] }) {
       title="Gün İçi Bilişsel Skor"
       description="0-100 arası skor; içerik değil ritim sinyalleri kullanılır."
     >
-      <AreaChart data={data} margin={{ left: -10, right: 8, top: 8, bottom: 0 }}>
+      <AreaChart
+        data={data}
+        margin={{ left: -10, right: 8, top: 8, bottom: 0 }}
+      >
         <defs>
           <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.5} />
@@ -80,10 +83,23 @@ export function ScoreAreaChart({ data }: { data: HourPoint[] }) {
             <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="4 8" stroke={GRID} opacity={0.22} vertical={false} />
+        <CartesianGrid
+          strokeDasharray="4 8"
+          stroke={GRID}
+          opacity={0.22}
+          vertical={false}
+        />
         <XAxis dataKey="hour" tick={AXIS} axisLine={false} tickLine={false} />
-        <YAxis domain={[0, 100]} tick={AXIS} axisLine={false} tickLine={false} />
-        <Tooltip contentStyle={TOOLTIP} cursor={{ stroke: "#22d3ee", strokeOpacity: 0.3 }} />
+        <YAxis
+          domain={[0, 100]}
+          tick={AXIS}
+          axisLine={false}
+          tickLine={false}
+        />
+        <Tooltip
+          contentStyle={TOOLTIP}
+          cursor={{ stroke: "#22d3ee", strokeOpacity: 0.3 }}
+        />
         <Area
           type="monotone"
           dataKey="score"
@@ -91,7 +107,12 @@ export function ScoreAreaChart({ data }: { data: HourPoint[] }) {
           strokeWidth={3}
           fill="url(#scoreGrad)"
           name="Skor"
-          activeDot={{ r: 5, fill: "#22d3ee", stroke: "#0f172a", strokeWidth: 2 }}
+          activeDot={{
+            r: 5,
+            fill: "#22d3ee",
+            stroke: "#0f172a",
+            strokeWidth: 2,
+          }}
         />
       </AreaChart>
     </ChartCard>
@@ -104,18 +125,34 @@ export function FlightTimeChart({ data }: { data: HourPoint[] }) {
       title="Ortalama Tuş Arası Süre"
       description="Yavaşlayan ritim, yorgunluk veya dikkat dağınıklığı sinyali olabilir."
     >
-      <LineChart data={data} margin={{ left: -10, right: 8, top: 8, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="4 8" stroke={GRID} opacity={0.22} vertical={false} />
+      <LineChart
+        data={data}
+        margin={{ left: -10, right: 8, top: 8, bottom: 0 }}
+      >
+        <CartesianGrid
+          strokeDasharray="4 8"
+          stroke={GRID}
+          opacity={0.22}
+          vertical={false}
+        />
         <XAxis dataKey="hour" tick={AXIS} axisLine={false} tickLine={false} />
         <YAxis tick={AXIS} axisLine={false} tickLine={false} />
-        <Tooltip contentStyle={TOOLTIP} cursor={{ stroke: "#818cf8", strokeOpacity: 0.28 }} />
+        <Tooltip
+          contentStyle={TOOLTIP}
+          cursor={{ stroke: "#818cf8", strokeOpacity: 0.28 }}
+        />
         <Line
           type="monotone"
           dataKey="mean_flight_ms"
           stroke="#818cf8"
           strokeWidth={3}
           dot={false}
-          activeDot={{ r: 5, fill: "#818cf8", stroke: "#0f172a", strokeWidth: 2 }}
+          activeDot={{
+            r: 5,
+            fill: "#818cf8",
+            stroke: "#0f172a",
+            strokeWidth: 2,
+          }}
           name="ms"
         />
       </LineChart>
@@ -130,11 +167,24 @@ export function BackspaceChart({ data }: { data: HourPoint[] }) {
       description="Düzeltme yoğunluğu arttığında panel erken uyarı üretir."
     >
       <BarChart data={data} margin={{ left: -10, right: 8, top: 8, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="4 8" stroke={GRID} opacity={0.22} vertical={false} />
+        <CartesianGrid
+          strokeDasharray="4 8"
+          stroke={GRID}
+          opacity={0.22}
+          vertical={false}
+        />
         <XAxis dataKey="hour" tick={AXIS} axisLine={false} tickLine={false} />
         <YAxis tick={AXIS} axisLine={false} tickLine={false} />
-        <Tooltip contentStyle={TOOLTIP} cursor={{ fill: "rgba(148,163,184,0.08)" }} />
-        <Bar dataKey="backspace_percentage" fill="#a78bfa" radius={[8, 8, 2, 2]} name="%" />
+        <Tooltip
+          contentStyle={TOOLTIP}
+          cursor={{ fill: "rgba(148,163,184,0.08)" }}
+        />
+        <Bar
+          dataKey="backspace_percentage"
+          fill="#a78bfa"
+          radius={[8, 8, 2, 2]}
+          name="%"
+        />
       </BarChart>
     </ChartCard>
   );
@@ -147,11 +197,24 @@ export function ActiveTypingChart({ data }: { data: HourPoint[] }) {
       description="Pencere başına aktif yazma yoğunluğu; ham tuş listesi saklanmaz."
     >
       <BarChart data={data} margin={{ left: -10, right: 8, top: 8, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="4 8" stroke={GRID} opacity={0.22} vertical={false} />
+        <CartesianGrid
+          strokeDasharray="4 8"
+          stroke={GRID}
+          opacity={0.22}
+          vertical={false}
+        />
         <XAxis dataKey="hour" tick={AXIS} axisLine={false} tickLine={false} />
         <YAxis tick={AXIS} axisLine={false} tickLine={false} />
-        <Tooltip contentStyle={TOOLTIP} cursor={{ fill: "rgba(34,211,238,0.08)" }} />
-        <Bar dataKey="active_typing_seconds" fill="#22d3ee" radius={[8, 8, 2, 2]} name="sn" />
+        <Tooltip
+          contentStyle={TOOLTIP}
+          cursor={{ fill: "rgba(34,211,238,0.08)" }}
+        />
+        <Bar
+          dataKey="active_typing_seconds"
+          fill="#22d3ee"
+          radius={[8, 8, 2, 2]}
+          name="sn"
+        />
       </BarChart>
     </ChartCard>
   );
@@ -163,18 +226,39 @@ export function WeeklyScoreChart({ data }: { data: DayPoint[] }) {
       title="Haftalık Skor Trendi"
       description="Son 7 günün ortalama bilişsel enerji görünümü."
     >
-      <LineChart data={data} margin={{ left: -10, right: 8, top: 8, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="4 8" stroke={GRID} opacity={0.22} vertical={false} />
+      <LineChart
+        data={data}
+        margin={{ left: -10, right: 8, top: 8, bottom: 0 }}
+      >
+        <CartesianGrid
+          strokeDasharray="4 8"
+          stroke={GRID}
+          opacity={0.22}
+          vertical={false}
+        />
         <XAxis dataKey="day" tick={AXIS} axisLine={false} tickLine={false} />
-        <YAxis domain={[0, 100]} tick={AXIS} axisLine={false} tickLine={false} />
-        <Tooltip contentStyle={TOOLTIP} cursor={{ stroke: "#22d3ee", strokeOpacity: 0.3 }} />
+        <YAxis
+          domain={[0, 100]}
+          tick={AXIS}
+          axisLine={false}
+          tickLine={false}
+        />
+        <Tooltip
+          contentStyle={TOOLTIP}
+          cursor={{ stroke: "#22d3ee", strokeOpacity: 0.3 }}
+        />
         <Line
           type="monotone"
           dataKey="avgScore"
           stroke="#22d3ee"
           strokeWidth={3}
           dot={{ r: 4, fill: "#0f172a", stroke: "#22d3ee", strokeWidth: 2 }}
-          activeDot={{ r: 6, fill: "#22d3ee", stroke: "#0f172a", strokeWidth: 2 }}
+          activeDot={{
+            r: 6,
+            fill: "#22d3ee",
+            stroke: "#0f172a",
+            strokeWidth: 2,
+          }}
           name="Ort. Skor"
         />
       </LineChart>
@@ -189,11 +273,24 @@ export function WeeklyActiveChart({ data }: { data: DayPoint[] }) {
       description="Gün bazında toplam aktif yazma dakikası."
     >
       <BarChart data={data} margin={{ left: -10, right: 8, top: 8, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="4 8" stroke={GRID} opacity={0.22} vertical={false} />
+        <CartesianGrid
+          strokeDasharray="4 8"
+          stroke={GRID}
+          opacity={0.22}
+          vertical={false}
+        />
         <XAxis dataKey="day" tick={AXIS} axisLine={false} tickLine={false} />
         <YAxis tick={AXIS} axisLine={false} tickLine={false} />
-        <Tooltip contentStyle={TOOLTIP} cursor={{ fill: "rgba(129,140,248,0.08)" }} />
-        <Bar dataKey="activeMinutes" fill="#818cf8" radius={[8, 8, 2, 2]} name="dk" />
+        <Tooltip
+          contentStyle={TOOLTIP}
+          cursor={{ fill: "rgba(129,140,248,0.08)" }}
+        />
+        <Bar
+          dataKey="activeMinutes"
+          fill="#818cf8"
+          radius={[8, 8, 2, 2]}
+          name="dk"
+        />
       </BarChart>
     </ChartCard>
   );
