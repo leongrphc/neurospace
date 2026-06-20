@@ -12,6 +12,8 @@ import {
   analyzeWindow,
   computeBaseline,
   computeConfidence,
+  updateBaselineEMA,
+  shouldUpdateBaseline,
   bucketForHour,
   bucketHourRange,
   detectTrend,
@@ -281,4 +283,35 @@ test("yüksek güvende net uyarı dili korunur", () => {
   assert.equal(r.confidence, "high");
   assert.ok(!r.recommendation.includes("yeterli veri toplanmadı"));
 });
+
+// ---- Kayan baseline (EMA) --------------------------------------------------
+test("updateBaselineEMA baseline'ı yeni pencereye doğru azıcık kaydırır", () => {
+  const updated = updateBaselineEMA(
+    baseline,
+    win({ mean_flight_ms: 200, median_flight_ms: 180, backspace_percentage: 15, pause_ratio: 0.4 }),
+    0.05
+  );
+  // Eski 100, yeni 200, alpha 0.05 => 105
+  assert.equal(updated.avgFlightTime, 105);
+  // Yön doğru ama tek pencerede aşırı oynamaz (gürültüye dayanıklı)
+  assert.ok(updated.avgFlightTime > baseline.avgFlightTime);
+  assert.ok(updated.avgFlightTime < 150);
+  assert.ok(updated.backspaceRatio > baseline.backspaceRatio);
+});
+
+test("updateBaselineEMA alpha=0 baseline'ı değiştirmez", () => {
+  const updated = updateBaselineEMA(baseline, win({ mean_flight_ms: 500 }), 0);
+  assert.equal(updated.avgFlightTime, baseline.avgFlightTime);
+});
+
+test("updateBaselineEMA alpha=1 tamamen yeni pencereye geçer", () => {
+  const updated = updateBaselineEMA(baseline, win({ mean_flight_ms: 140 }), 1);
+  assert.equal(updated.avgFlightTime, 140);
+});
+
+test("shouldUpdateBaseline az örnekli pencereyi reddeder", () => {
+  assert.equal(shouldUpdateBaseline(win({ total_samples: 25 })), false);
+  assert.equal(shouldUpdateBaseline(win({ total_samples: 120 })), true);
+});
+
 

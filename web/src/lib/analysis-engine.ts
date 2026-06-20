@@ -331,6 +331,49 @@ export function computeBaseline(windows: WindowRow[]): UserBaseline | null {
 }
 
 /**
+ * Kayan baseline: baseline hazır olduktan SONRA her güvenilir pencereyle
+ * üstel hareketli ortalama (EMA) ile yavaşça güncellenir.
+ *
+ * Neden: İnsanların yazma ritmi zamanla değişir (klavye alışkanlığı,
+ * gelişme, yorgunluk düzeni). Sabit baseline eskidikçe skor anlamını yitirir.
+ * EMA, baseline'ı güncel tutarken tek pencerenin gürültüsüne kapılmaz.
+ *
+ * alpha küçük (örn. 0.05): baseline çok yavaş kayar, ~20 pencerede yenilenir.
+ * Yalnızca yeterli örneğe sahip (güvenilir) pencereler baseline'ı kaydırır;
+ * RİSKLİ/kötü pencereler baseline'ı bozmasın diye çağrı tarafında filtrelenir.
+ */
+export const BASELINE_EMA_ALPHA = 0.05;
+const BASELINE_UPDATE_MIN_SAMPLES = 40; // bu kadar örneği olmayan pencere baseline'ı kaydırmaz
+
+export function shouldUpdateBaseline(current: IncomingWindow): boolean {
+  return current.total_samples >= BASELINE_UPDATE_MIN_SAMPLES;
+}
+
+export function updateBaselineEMA(
+  baseline: UserBaseline,
+  current: IncomingWindow,
+  alpha = BASELINE_EMA_ALPHA
+): UserBaseline {
+  const a = clamp(alpha, 0, 1);
+  const blend = (prev: number, next: number) => prev * (1 - a) + next * a;
+  return {
+    avgFlightTime:
+      Math.round(blend(baseline.avgFlightTime, current.mean_flight_ms) * 10) /
+      10,
+    medianFlightTime:
+      Math.round(
+        blend(baseline.medianFlightTime, current.median_flight_ms) * 10
+      ) / 10,
+    backspaceRatio:
+      Math.round(
+        blend(baseline.backspaceRatio, current.backspace_percentage) * 10
+      ) / 10,
+    pauseRatio:
+      Math.round(blend(baseline.pauseRatio, current.pause_ratio) * 100) / 100,
+  };
+}
+
+/**
  * Zaman-bağlamlı baseline: günü 4 dilime ayırır.
  * Böylece sabah dinç hâl ile akşam yorgun hâl ayrı baseline'lara göre ölçülür.
  */

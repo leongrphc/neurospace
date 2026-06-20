@@ -23,6 +23,8 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import {
   analyzeWindow,
   computeBaseline,
+  updateBaselineEMA,
+  shouldUpdateBaseline,
   CALIBRATION_WINDOWS,
   bucketForHour,
   bucketHourRange,
@@ -224,6 +226,35 @@ export async function POST(req: NextRequest) {
         route: ROUTE,
         userId: user.id,
       });
+    }
+
+    // 6) Kayan baseline (EMA) ------------------------------------------------
+    // Baseline hazırken, yalnızca SAĞLIKLI ve yeterli örneğe sahip pencereler
+    // baseline'ı yavaşça günceller. Riskli/kötü pencereler (yorgunluk anı)
+    // baseline'ı bozmamalı; yoksa "yeni normal" yorgunluk olur.
+    const baselineWasReady = baselineRow?.is_ready === true;
+    const cleanWindow = !result.signals.slowdownRisk && !result.signals.backspaceRisk;
+    if (baselineWasReady && cleanWindow && shouldUpdateBaseline(data)) {
+      const updated = updateBaselineEMA(baseline, data);
+      const { error: emaErr } = await supabase
+        .from("baselines")
+        .update({
+          avg_flight_ms: updated.avgFlightTime,
+          median_flight_ms: updated.medianFlightTime,
+          backspace_ratio: updated.backspaceRatio,
+          pause_ratio: updated.pauseRatio,
+          sample_windows: baselineWindows + 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id)
+        .eq("time_bucket", bucket);
+      if (emaErr) {
+        logger.warn("baseline EMA update failed", {
+          requestId,
+          route: ROUTE,
+          userId: user.id,
+        });
+      }
     }
 
     return NextResponse.json(
