@@ -151,6 +151,25 @@ test("RECOVERING/OPTIMAL durumunda düşüş uyarısı eklenmez (çelişki yok)"
   assert.ok(!r.recommendation.includes("düşüş eğilimi"));
 });
 
+test("declining trend, yüksek-ama-düşen skorda OPTIMAL'i SLIGHTLY_DISTRACTED'a düşürür", () => {
+  // Skor hâlâ yüksek (>=80, normalde OPTIMAL) ama geçmiş istikrarlı düşüyor.
+  // Erken uyarı: riskler eşiği aşmadan gidişat kötüyse OPTIMAL'den indir.
+  const r = analyzeWindow(baseline, win({ mean_flight_ms: 115 }), null, [
+    98, 92, 86,
+  ]);
+  assert.ok(r.score >= 80, `skor OPTIMAL eşiğinde olmalı: ${r.score}`);
+  assert.equal(r.trend, "declining");
+  assert.equal(r.signals.slowdownRisk, false);
+  assert.equal(r.signals.backspaceRisk, false);
+  assert.equal(r.status, "SLIGHTLY_DISTRACTED");
+});
+
+test("recovering trend, önceki WARNING + temiz pencere RECOVERING'i pekiştirir", () => {
+  const r = analyzeWindow(baseline, win(), "WARNING", [55, 65, 78]);
+  assert.equal(r.trend, "recovering");
+  assert.equal(r.status, "RECOVERING");
+});
+
 // ---- Baseline hesaplama ----------------------------------------------------
 test("computeBaseline yetersiz pencerede null döner", () => {
   const rows = [

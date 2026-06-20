@@ -111,8 +111,10 @@ function clamp(v: number, min: number, max: number): number {
 
 /**
  * Sapma oranını 0-100 alt skoruna çevirir.
- * deviation = 1.0 -> 100 (baseline ile aynı), her +%10 sapma puan düşürür.
- * Yalnızca KÖTÜLEŞME (deviation > 1) cezalandırılır.
+ * deviation = 1.0 -> 100 (baseline ile aynı). Sapma arttıkça lineer düşer:
+ * her +%10 sapma ~13 puan düşürür (excess * 130 katsayısı).
+ * Yalnızca KÖTÜLEŞME (deviation > 1) cezalandırılır; daha iyi performans
+ * (deviation < 1) puan kaybettirmez, 100'de tutulur.
  */
 function deviationToScore(deviation: number): number {
   if (!Number.isFinite(deviation) || deviation <= 0) return 50;
