@@ -303,7 +303,48 @@
     const close = document.createElement("button");
     close.textContent = "✕";
     close.setAttribute("aria-label", "Kapat");
-    close.style.cssText = [
+    close.style.cssText = closeBtnCss();
+
+    let hideTimer = null;
+    const dismiss = () => {
+      bar.style.transform = "translateY(-100%)";
+      setTimeout(() => bar.remove(), 350);
+      if (hideTimer) clearTimeout(hideTimer);
+    };
+    close.addEventListener("click", dismiss);
+
+    bar.append(icon, msg);
+
+    // AKSİYON DÖNGÜSÜ: Yorgunluk/uyarı durumunda "Mola başlat" sun.
+    // Mola bitince kısa bir geri bildirim sorulur (sayfa içi, sunucuya gitmez).
+    if (report.status === "FATIGUED" || report.status === "WARNING") {
+      const breakBtn = document.createElement("button");
+      breakBtn.textContent = "☕ Mola başlat";
+      breakBtn.style.cssText = actionBtnCss();
+      breakBtn.addEventListener("click", () => {
+        if (hideTimer) clearTimeout(hideTimer);
+        startBreak(bar, theme.bg);
+      });
+      bar.append(breakBtn);
+    }
+
+    bar.append(close);
+    document.documentElement.appendChild(bar);
+
+    // Kayarak in
+    requestAnimationFrame(() => {
+      bar.style.transform = "translateY(0)";
+    });
+
+    // 8 sn sonra otomatik kapan
+    hideTimer = setTimeout(dismiss, 8000);
+  }
+
+  // ---- Mola sayacı + geri bildirim -----------------------------------------
+  const BREAK_SECONDS = 5 * 60; // 5 dakikalık kısa mola
+
+  function closeBtnCss() {
+    return [
       "background:rgba(255,255,255,.2)",
       "border:none",
       "color:#fff",
@@ -314,25 +355,103 @@
       "font-size:13px",
       "flex-shrink:0",
     ].join(";");
+  }
 
-    let hideTimer = null;
+  function actionBtnCss() {
+    return [
+      "background:rgba(255,255,255,.92)",
+      "border:none",
+      "color:#111",
+      "padding:7px 14px",
+      "border-radius:8px",
+      "cursor:pointer",
+      "font:700 13px system-ui,-apple-system,'Segoe UI',sans-serif",
+      "flex-shrink:0",
+    ].join(";");
+  }
+
+  // Banner'ı mola sayacı moduna geçirir.
+  function startBreak(bar, bg) {
+    let remaining = BREAK_SECONDS;
+    bar.textContent = "";
+    bar.style.background = bg;
+
+    const label = document.createElement("span");
+    label.style.cssText = "flex:1";
+    const timer = document.createElement("span");
+    timer.style.cssText =
+      "font-variant-numeric:tabular-nums;font-weight:800;font-size:16px";
+
+    const fmt = (s) =>
+      `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+    const render = () => {
+      label.textContent = "NeuroSpace — Mola zamanı. Ekrandan birkaç dakika uzaklaş.";
+      timer.textContent = fmt(remaining);
+    };
+    render();
+
+    const skip = document.createElement("button");
+    skip.textContent = "Molayı bitir";
+    skip.style.cssText = actionBtnCss();
+
+    let tick = null;
+    const finish = () => {
+      if (tick) clearInterval(tick);
+      askFeedback(bar, bg);
+    };
+    skip.addEventListener("click", finish);
+
+    bar.append(label, timer, skip);
+
+    tick = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        finish();
+      } else {
+        render();
+      }
+    }, 1000);
+  }
+
+  // Mola sonrası kısa geri bildirim — yalnızca yerel, sunucuya gönderilmez.
+  function askFeedback(bar, bg) {
+    bar.textContent = "";
+    bar.style.background = bg;
+
+    const label = document.createElement("span");
+    label.textContent = "NeuroSpace — Şimdi nasıl hissediyorsun?";
+    label.style.cssText = "flex:1";
+
     const dismiss = () => {
       bar.style.transform = "translateY(-100%)";
       setTimeout(() => bar.remove(), 350);
-      if (hideTimer) clearTimeout(hideTimer);
     };
-    close.addEventListener("click", dismiss);
 
-    bar.append(icon, msg, close);
-    document.documentElement.appendChild(bar);
+    const better = document.createElement("button");
+    better.textContent = "👍 Daha iyi";
+    better.style.cssText = actionBtnCss();
 
-    // Kayarak in
-    requestAnimationFrame(() => {
-      bar.style.transform = "translateY(0)";
-    });
+    const same = document.createElement("button");
+    same.textContent = "😐 Aynı";
+    same.style.cssText = actionBtnCss();
 
-    // 8 sn sonra otomatik kapan
-    hideTimer = setTimeout(dismiss, 8000);
+    const thank = (msg) => {
+      bar.textContent = "";
+      const t = document.createElement("span");
+      t.textContent = `NeuroSpace — ${msg}`;
+      t.style.cssText = "flex:1";
+      bar.append(t);
+      setTimeout(dismiss, 3000);
+    };
+
+    better.addEventListener("click", () =>
+      thank("Harika, tempona kademeli dönebilirsin.")
+    );
+    same.addEventListener("click", () =>
+      thank("Sorun değil, biraz daha dinlenmek iyi gelebilir.")
+    );
+
+    bar.append(label, better, same);
   }
 
   chrome.runtime.onMessage.addListener((message) => {
