@@ -1,4 +1,8 @@
-import type { AnalysisStatus, TrendDirection } from "@/lib/analysis-engine";
+import type {
+  AnalysisStatus,
+  TrendDirection,
+  Confidence,
+} from "@/lib/analysis-engine";
 
 type Accent = "indigo" | "purple" | "cyan" | "green" | "amber" | "red";
 type Tone = "default" | "quiet" | "strong";
@@ -184,6 +188,40 @@ export function TrendBadge({ trend }: { trend: TrendDirection }) {
     >
       <span aria-hidden>{t.arrow}</span>
       {t.label}
+    </span>
+  );
+}
+
+const CONFIDENCE_STYLE: Record<
+  Confidence,
+  { label: string; cls: string; title: string }
+> = {
+  high: {
+    label: "Güvenilir",
+    cls: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-200",
+    title: "Olgun baseline ve yeterli örnek: skora güvenebilirsiniz.",
+  },
+  medium: {
+    label: "Orta güven",
+    cls: "bg-amber-500/10 text-amber-700 dark:text-amber-200",
+    title: "Baseline gelişiyor: skor makul ama henüz tam oturmadı.",
+  },
+  low: {
+    label: "Düşük güven",
+    cls: "bg-slate-500/10 text-slate-600 dark:text-slate-300",
+    title: "Az veri veya taze baseline: skoru ihtiyatla değerlendirin.",
+  },
+};
+
+export function ConfidenceBadge({ confidence }: { confidence: Confidence }) {
+  const c = CONFIDENCE_STYLE[confidence] ?? CONFIDENCE_STYLE.low;
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${c.cls}`}
+      title={c.title}
+    >
+      <span aria-hidden>◴</span>
+      {c.label}
     </span>
   );
 }

@@ -4,7 +4,7 @@
  * Deterministik (seed'li) üretim: her yenilemede aynı grafikler.
  */
 
-import type { AnalysisStatus } from "./analysis-engine";
+import type { AnalysisStatus, Confidence } from "./analysis-engine";
 
 // Basit seed'li PRNG (mulberry32)
 function rng(seed: number) {
@@ -78,6 +78,7 @@ export function demoSummary() {
   return {
     currentScore: last.score,
     currentStatus: last.status,
+    currentConfidence: "high" as Confidence,
     todayAverage: avg,
     bestHour: best.hour,
     worstHour: worst.hour,

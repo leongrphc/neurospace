@@ -120,6 +120,9 @@ export async function POST(req: NextRequest) {
         }
       : null;
 
+    // Confidence için: baseline kaç pencereden kuruldu?
+    let baselineWindows = baselineRow?.sample_windows ?? 0;
+
     // 4a) Kalibrasyon modu: bu dilim için baseline yoksa biriktir, yetince hesapla
     if (!baseline) {
       // Yalnızca aynı dilime ait pencerelerle kalibre et
@@ -152,7 +155,10 @@ export async function POST(req: NextRequest) {
           is_ready: true,
           updated_at: new Date().toISOString(),
         });
-        if (!blErr) baseline = computed;
+        if (!blErr) {
+          baseline = computed;
+          baselineWindows = (history ?? []).length;
+        }
       }
 
       if (!baseline) {
@@ -161,6 +167,7 @@ export async function POST(req: NextRequest) {
           status: "INSUFFICIENT_DATA" as AnalysisStatus,
           score: 0,
           recommendation: `Kalibrasyon sürüyor (${(history ?? []).length}/${CALIBRATION_WINDOWS} pencere, ${bucketLabel(bucket)}). Normal şekilde yazmaya devam edin.`,
+          confidence: "low" as const,
         };
         await supabase.from("analysis_reports").insert({
           user_id: user.id,
@@ -192,7 +199,13 @@ export async function POST(req: NextRequest) {
       .map((r) => r.score as number)
       .filter((s) => typeof s === "number" && s > 0);
 
-    const result = analyzeWindow(baseline, data, previousStatus, recentScores);
+    const result = analyzeWindow(
+      baseline,
+      data,
+      previousStatus,
+      recentScores,
+      baselineWindows
+    );
 
     const { error: reportErr } = await supabase
       .from("analysis_reports")
@@ -203,6 +216,7 @@ export async function POST(req: NextRequest) {
         status: result.status,
         score: result.score,
         recommendation: result.recommendation,
+        confidence: result.confidence,
       });
     if (reportErr) {
       logger.error("analysis_reports insert failed", reportErr, {
@@ -218,6 +232,7 @@ export async function POST(req: NextRequest) {
         score: result.score,
         recommendation: result.recommendation,
         trend: result.trend,
+        confidence: result.confidence,
       },
       { status: 200 }
     );

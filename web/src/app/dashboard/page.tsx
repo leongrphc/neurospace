@@ -9,7 +9,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
-import { StatCard, StatusBadge, TrendBadge } from "@/components/StatCard";
+import { StatCard, StatusBadge, TrendBadge, ConfidenceBadge } from "@/components/StatCard";
 import { ScoreAreaChart, FlightTimeChart } from "@/components/Charts";
 import { demoDailyData, demoSummary, type HourPoint } from "@/lib/demo-data";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
@@ -17,6 +17,7 @@ import {
   detectTrend,
   type AnalysisStatus,
   type TrendDirection,
+  type Confidence,
 } from "@/lib/analysis-engine";
 
 type Mode = "loading" | "demo" | "empty" | "live";
@@ -80,7 +81,9 @@ export default function DashboardPage() {
 
       const { data: reports } = await supabase
         .from("analysis_reports")
-        .select("score, status, created_at, recommendation, typing_window_id")
+        .select(
+          "score, status, created_at, recommendation, confidence, typing_window_id"
+        )
         .gte("created_at", since.toISOString())
         .order("created_at", { ascending: true });
 
@@ -168,7 +171,6 @@ export default function DashboardPage() {
       const last = reports[reports.length - 1];
       const best = scored.reduce((a, b) => (b.score > a.score ? b : a));
       const worst = scored.reduce((a, b) => (b.score < a.score ? b : a));
-
       // Flight/backspace ortalamaları yalnızca penceresi olan noktalardan
       // alınır; eşleşmeyen (metrik=0) noktalar ortalamayı aşağı çekmemeli.
       const withFlight = points.filter((p) => p.mean_flight_ms > 0);
@@ -190,6 +192,7 @@ export default function DashboardPage() {
       setSummary({
         currentScore: last.score ?? 0,
         currentStatus: last.status,
+        currentConfidence: (last.confidence as Confidence) ?? "low",
         todayAverage: Math.round(
           scored.reduce((s, p) => s + p.score, 0) / scored.length
         ),
@@ -293,6 +296,7 @@ export default function DashboardPage() {
               <div className="flex flex-wrap gap-2">
                 <StatusBadge status={summary.currentStatus} />
                 <TrendBadge trend={trend} />
+                <ConfidenceBadge confidence={summary.currentConfidence} />
               </div>
               <div className="mt-6 flex items-end gap-4">
                 <div className="text-7xl font-black leading-none tracking-tighter text-slate-950 dark:text-white sm:text-8xl">
