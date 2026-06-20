@@ -80,14 +80,14 @@ export default function DashboardPage() {
 
       const { data: reports } = await supabase
         .from("analysis_reports")
-        .select("score, status, created_at, recommendation")
+        .select("score, status, created_at, recommendation, typing_window_id")
         .gte("created_at", since.toISOString())
         .order("created_at", { ascending: true });
 
       const { data: windows } = await supabase
         .from("typing_windows")
         .select(
-          "mean_flight_ms, backspace_percentage, active_typing_seconds, created_at"
+          "id, mean_flight_ms, backspace_percentage, active_typing_seconds, created_at"
         )
         .gte("created_at", since.toISOString())
         .order("created_at", { ascending: true });
@@ -96,6 +96,10 @@ export default function DashboardPage() {
         setMode("empty");
         return;
       }
+
+      // Raporu doğru pencereye id ile bağla (index eşleştirme yanlış olurdu:
+      // rapor ve pencere sayıları/sıraları kalibrasyon/silme sonrası ayrışabilir).
+      const windowById = new Map(windows.map((w) => [w.id, w]));
 
       const byHour = new Map<
         string,
@@ -110,8 +114,10 @@ export default function DashboardPage() {
         }
       >();
 
-      reports.forEach((r, i) => {
-        const w = windows[Math.min(i, windows.length - 1)];
+      reports.forEach((r) => {
+        const w = r.typing_window_id
+          ? windowById.get(r.typing_window_id)
+          : undefined;
         const hour =
           new Date(r.created_at).getHours().toString().padStart(2, "0") + ":00";
         const prev = byHour.get(hour) ?? {
@@ -124,13 +130,16 @@ export default function DashboardPage() {
           lastStatus: "INSUFFICIENT_DATA" as HourPoint["status"],
         };
         const score = r.score ?? 0;
+        // Yalnızca eşleşen pencere varsa metrik toplamına kat; eşleşme yoksa
+        // metrik ortalamasını bozmamak için windowCount artırılmaz.
+        const hasWindow = !!w;
         byHour.set(hour, {
           scoreSum: prev.scoreSum + score,
           scoreCount: prev.scoreCount + (score > 0 ? 1 : 0),
           flightSum: prev.flightSum + (w?.mean_flight_ms ?? 0),
           backspaceSum: prev.backspaceSum + (w?.backspace_percentage ?? 0),
           activeSeconds: prev.activeSeconds + (w?.active_typing_seconds ?? 0),
-          windowCount: prev.windowCount + 1,
+          windowCount: prev.windowCount + (hasWindow ? 1 : 0),
           lastStatus: r.status,
         });
       });
@@ -141,9 +150,12 @@ export default function DashboardPage() {
           ? Math.round(bucket.scoreSum / bucket.scoreCount)
           : 0,
         status: bucket.lastStatus,
-        mean_flight_ms: Math.round(bucket.flightSum / bucket.windowCount),
-        backspace_percentage:
-          Math.round((bucket.backspaceSum / bucket.windowCount) * 10) / 10,
+        mean_flight_ms: bucket.windowCount
+          ? Math.round(bucket.flightSum / bucket.windowCount)
+          : 0,
+        backspace_percentage: bucket.windowCount
+          ? Math.round((bucket.backspaceSum / bucket.windowCount) * 10) / 10
+          : 0,
         active_typing_seconds: bucket.activeSeconds,
       }));
       const scored = points.filter((p) => p.score > 0);
@@ -157,6 +169,23 @@ export default function DashboardPage() {
       const best = scored.reduce((a, b) => (b.score > a.score ? b : a));
       const worst = scored.reduce((a, b) => (b.score < a.score ? b : a));
 
+      // Flight/backspace ortalamaları yalnızca penceresi olan noktalardan
+      // alınır; eşleşmeyen (metrik=0) noktalar ortalamayı aşağı çekmemeli.
+      const withFlight = points.filter((p) => p.mean_flight_ms > 0);
+      const avgFlightMs = withFlight.length
+        ? Math.round(
+            withFlight.reduce((s, p) => s + p.mean_flight_ms, 0) /
+              withFlight.length
+          )
+        : 0;
+      const backspacePct = withFlight.length
+        ? Math.round(
+            (withFlight.reduce((s, p) => s + p.backspace_percentage, 0) /
+              withFlight.length) *
+              10
+          ) / 10
+        : 0;
+
       setDaily(points);
       setSummary({
         currentScore: last.score ?? 0,
@@ -166,15 +195,8 @@ export default function DashboardPage() {
         ),
         bestHour: best.hour,
         worstHour: worst.hour,
-        avgFlightMs: Math.round(
-          points.reduce((s, p) => s + p.mean_flight_ms, 0) / points.length
-        ),
-        backspacePct:
-          Math.round(
-            (points.reduce((s, p) => s + p.backspace_percentage, 0) /
-              points.length) *
-              10
-          ) / 10,
+        avgFlightMs,
+        backspacePct,
         activeMinutes: Math.round(
           points.reduce((s, p) => s + p.active_typing_seconds, 0) / 60
         ),

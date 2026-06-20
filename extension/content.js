@@ -174,19 +174,29 @@
     return sortedArr[Math.max(0, idx)];
   }
 
+  // Gerçek medyan: çift sayıda örnekte iki ortanca değerin ortalaması.
+  function medianOf(sortedArr) {
+    const n = sortedArr.length;
+    if (n === 0) return 0;
+    const mid = Math.floor(n / 2);
+    return n % 2 === 0
+      ? (sortedArr[mid - 1] + sortedArr[mid]) / 2
+      : sortedArr[mid];
+  }
+
   function buildSummary() {
     const ft = [...windowState.flightTimes].sort((a, b) => a - b);
     const n = ft.length;
     if (n === 0 && windowState.totalKeyCount === 0) return null;
 
     const mean = n ? ft.reduce((s, v) => s + v, 0) / n : 0;
-    const median = n ? ft[Math.floor(n / 2)] : 0;
+    const median = medianOf(ft);
     const totalEvents = n + windowState.pauseCount;
 
     // GİZLİLİK: Yalnızca bu özet nesnesi gönderilir. Ham diziler burada ölür.
     return {
       mean_flight_ms: Math.round(mean * 10) / 10,
-      median_flight_ms: median,
+      median_flight_ms: Math.round(median * 10) / 10,
       p95_flight_ms: percentile(ft, 95),
       backspace_percentage:
         windowState.totalKeyCount > 0
